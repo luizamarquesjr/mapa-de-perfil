@@ -4,7 +4,7 @@
    Cole aqui a URL do seu Web App (termina em /exec).
    ============================================================ */
 window.APP_CONFIG = {
-  SCRIPT_URL: "COLE_AQUI_A_URL_DO_APPS_SCRIPT_TERMINADA_EM_exec",
+  SCRIPT_URL: "https://script.google.com/macros/s/AKfycbxKHfv633f8nuHnRmAPGnot7-8l6Wed8UBIXJhxJKQWhXnSPMgCnLn2EhCkWaBQ90o/exec",
   APP_TITLE:  "Mapa de Perfil",
   // Assunto e remetente padrão dos e-mails enviados aos respondentes:
   EMAIL_SUBJECT: "Seu Mapa de Perfil",
