@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resumo do Time</title>
+<style>
+  :root{--ink:#1c2430;--muted:#5c6675;--line:#e4e8ee;--soft:#f5f7f9;--navy:#1f2d3d;--gold:#b8860b;--acc:#3F6EA5;
+    --hpi:#F2A900;--hds:#D6001C;--mvpi:#3F6EA5;--s:#2e7d5b;--w:#b5462f;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Helvetica Neue",Arial,sans-serif;color:var(--ink);background:#eef1f5;line-height:1.5;}
+  .wrap{max-width:960px;margin:0 auto;padding:20px 18px 70px;}
+  .band{background:linear-gradient(125deg,#1b2836,#33475e);color:#fff;padding:24px 26px;border-radius:14px;margin-bottom:18px;}
+  .band .kick{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:#9fb6d0;font-weight:700;}
+  .band h1{font-size:25px;font-weight:800;margin:6px 0 4px;}
+  .band .sub{font-size:13px;color:#c7d4e2;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:13px;padding:18px 22px;margin-bottom:16px;}
+  h2{font-size:16px;color:var(--navy);margin-bottom:12px;padding-bottom:7px;border-bottom:2px solid var(--line);}
+  h2 .tag{font-size:10px;font-weight:800;color:#fff;padding:2px 8px;border-radius:5px;margin-left:8px;}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  .kpi{background:var(--soft);border-radius:11px;padding:14px;text-align:center;}
+  .kpi .v{font-size:26px;font-weight:800;color:var(--navy);}
+  .kpi .l{font-size:11px;color:var(--muted);margin-top:2px;}
+  .sbar{display:grid;grid-template-columns:185px 1fr 90px;align-items:center;gap:10px;margin:5px 0;}
+  .sbar .lab{font-size:12.5px;font-weight:600;text-align:right;}
+  .track{position:relative;height:15px;background:#eef1f5;border-radius:8px;overflow:hidden;}
+  .fill{position:absolute;left:0;top:0;bottom:0;border-radius:8px;}
+  .fill.hpi{background:var(--hpi);}.fill.hds{background:var(--hds);}.fill.mvpi{background:var(--mvpi);}
+  .zone{position:absolute;top:0;bottom:0;width:1px;background:rgba(0,0,0,.14);}
+  .sbar .val{font-size:12px;font-weight:800;color:var(--navy);}
+  .sbar .val small{color:var(--muted);font-weight:600;}
+  .lead{font-size:14px;line-height:1.6;}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .kard{border:1px solid var(--line);border-radius:11px;padding:14px 17px;}
+  .kard.pos{border-top:4px solid var(--s);}.kard.neg{border-top:4px solid var(--w);}
+  .kard h3{font-size:14px;margin-bottom:8px;}.kard.pos h3{color:var(--s);}.kard.neg h3{color:var(--w);}
+  ul.clean{list-style:none;}ul.clean li{position:relative;padding:5px 0 5px 16px;font-size:12.5px;border-bottom:1px solid var(--soft);}
+  ul.clean li:last-child{border-bottom:none;}ul.clean li:before{content:"";position:absolute;left:2px;top:10px;width:6px;height:6px;border-radius:50%;}
+  ul.pos li:before{background:var(--s);}ul.neg li:before{background:var(--w);}
+  .toolbar{display:flex;justify-content:flex-end;gap:8px;margin-bottom:8px;}
+  .btn{background:#1f2d3d;color:#fff;border:none;border-radius:9px;padding:9px 15px;font-size:13px;font-weight:700;cursor:pointer;}
+  .btn.sec{background:#fff;color:#1f2d3d;border:1.5px solid #e4e8ee;}
+  input.txt{padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-size:14px;width:100%;}
+  .empty{padding:36px;text-align:center;color:var(--muted);}
+  @media print{body{background:#fff;}.toolbar{display:none;}}
+  @media(max-width:600px){.kpis{grid-template-columns:repeat(2,1fr);}.two{grid-template-columns:1fr;}.sbar{grid-template-columns:120px 1fr 80px;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="band"><div class="kick">Painel do Aplicador</div><h1>Resumo do Time</h1><div class="sub" id="sub">Estatísticas agregadas de todos os respondentes</div></div>
+
+  <div id="gate" class="card" style="display:none;">
+    <h2>Chave de administrador</h2>
+    <p class="lead" style="margin-bottom:10px;">Informe a chave para carregar os dados do time.</p>
+    <input class="txt" id="keyin" type="password" placeholder="Chave de administrador" style="margin-bottom:10px;">
+    <button class="btn" id="enter">Carregar</button>
+  </div>
+
+  <div id="content"><div class="card empty">Carregando...</div></div>
+</div>
+
+<script src="assets/config.js"></script>
+<script src="assets/core.js"></script>
+<script src="assets/api.js"></script>
+<script>
+(function(){
+  var H=window.HOGAN, adminKey=sessionStorage.getItem('mp_adminKey')||'';
+  var colorOf={HPI:'hpi',HDS:'hds',MVPI:'mvpi'};
+
+  if(!adminKey){document.getElementById('gate').style.display='block';document.getElementById('content').innerHTML='';}
+  else load();
+  document.getElementById('enter').onclick=function(){var k=document.getElementById('keyin').value.trim();if(!k)return;adminKey=k;sessionStorage.setItem('mp_adminKey',k);document.getElementById('gate').style.display='none';document.getElementById('content').innerHTML='<div class="card empty">Carregando...</div>';load();};
+
+  function load(){
+    if(!(window.API&&API.configured())){document.getElementById('content').innerHTML='<div class="card empty">Backend não configurado (assets/config.js).</div>';return;}
+    API.list(adminKey).then(function(res){
+      if(!res||!res.ok){document.getElementById('content').innerHTML='<div class="card empty">Erro: '+((res&&res.error)||'sem resposta')+'</div>';return;}
+      render(res.people||[]);
+    }).catch(function(){document.getElementById('content').innerHTML='<div class="card empty">Falha de conexão.</div>';});
+  }
+
+  function render(people){
+    if(!people.length){document.getElementById('content').innerHTML='<div class="card empty">Nenhum respondente ainda.</div>';return;}
+    var N=people.length;
+    var all=people.map(function(p){return H.score(p.answers);});
+    var avg={},hi={},lo={},mn={},mx={};
+    H.ORDER.forEach(function(sc){
+      var vals=all.map(function(s){return s[sc];});
+      avg[sc]=Math.round(vals.reduce(function(a,b){return a+b;},0)/N);
+      hi[sc]=vals.filter(function(v){return v>=70;}).length;
+      lo[sc]=vals.filter(function(v){return v<=30;}).length;
+      mn[sc]=Math.min.apply(null,vals); mx[sc]=Math.max.apply(null,vals);
+    });
+    document.getElementById('sub').textContent=N+' respondentes · média por escala (0–100)';
+
+    function bars(list,inv){
+      return list.map(function(sc){
+        var v=avg[sc], marc=hi[sc]+lo[sc];
+        return '<div class="sbar"><div class="lab">'+H.SCALES[sc].name+'</div>'
+          +'<div class="track"><div class="zone" style="left:'+(inv==='HDS'?70:30)+'%"></div><div class="zone" style="left:'+(inv==='HDS'?90:70)+'%"></div>'
+          +'<div class="fill '+colorOf[inv]+'" style="width:'+v+'%"></div></div>'
+          +'<div class="val">'+v+' <small>('+mn[sc]+'–'+mx[sc]+')</small></div></div>';
+      }).join('');
+    }
+
+    // Destaques do time
+    var forcas=H.HPI.concat(H.MVPI).filter(function(s){return avg[s]>=65;}).sort(function(a,b){return avg[b]-avg[a];}).slice(0,6);
+    var riscos=H.HDS.filter(function(s){return hi[s]>0;}).sort(function(a,b){return hi[b]-hi[a]||avg[b]-avg[a];}).slice(0,6);
+    var spread=H.ORDER.map(function(s){return {s:s,d:mx[s]-mn[s]};}).sort(function(a,b){return b.d-a.d;}).slice(0,3);
+
+    var forcasHTML=forcas.length?forcas.map(function(s){return '<li><b>'+H.SCALES[s].name+'</b> — média '+avg[s]+' ('+H.SCALES[s].inv+')</li>';}).join(''):'<li>Sem médias marcantes.</li>';
+    var riscosHTML=riscos.length?riscos.map(function(s){return '<li><b>'+H.SCALES[s].name+'</b> — '+hi[s]+' de '+N+' em zona alta (média '+avg[s]+')</li>';}).join(''):'<li>Nenhum risco em zona alta no time.</li>';
+
+    var resumo='O time reúne '+N+' pessoas. '
+      +(forcas.length?'Como coletivo, destaca-se em '+forcas.slice(0,3).map(function(s){return H.SCALES[s].name;}).join(', ')+'. ':'')
+      +(riscos.length?'Atenção de gestão para '+riscos.slice(0,2).map(function(s){return H.SCALES[s].name;}).join(' e ')+', presentes em zona alta em parte do grupo. ':'Nenhum risco coletivo em zona alta. ')
+      +'Maior diversidade de perfil em '+spread.map(function(x){return H.SCALES[x.s].name+' ('+x.d+' pts)';}).join(', ')+'.';
+
+    document.getElementById('content').innerHTML=
+      '<div class="card"><div class="kpis">'
+        +'<div class="kpi"><div class="v">'+N+'</div><div class="l">respondentes</div></div>'
+        +'<div class="kpi"><div class="v">'+forcas.length+'</div><div class="l">forças coletivas (méd ≥ 65)</div></div>'
+        +'<div class="kpi"><div class="v">'+riscos.length+'</div><div class="l">riscos com alguém em zona alta</div></div>'
+        +'<div class="kpi"><div class="v">'+spread[0].d+'</div><div class="l">maior amplitude (pts)</div></div>'
+      +'</div></div>'
+      +'<div class="card"><h2>Leitura do time</h2><p class="lead">'+resumo+'</p></div>'
+      +'<div class="card"><h2>Estilo médio do time <span class="tag" style="background:var(--hpi)">HPI</span></h2>'+bars(H.HPI,'HPI')+'</div>'
+      +'<div class="card"><h2>Riscos médios do time <span class="tag" style="background:var(--hds)">HDS</span></h2>'+bars(H.HDS,'HDS')+'</div>'
+      +'<div class="card"><h2>Valores médios do time <span class="tag" style="background:var(--mvpi)">MVPI</span></h2>'+bars(H.MVPI,'MVPI')+'</div>'
+      +'<div class="card"><h2>Destaques coletivos</h2><div class="two">'
+        +'<div class="kard pos"><h3>Forças do time</h3><ul class="clean pos">'+forcasHTML+'</ul></div>'
+        +'<div class="kard neg"><h3>Riscos a acompanhar</h3><ul class="clean neg">'+riscosHTML+'</ul></div>'
+      +'</div></div>';
+    var tb=document.createElement('div');tb.className='toolbar';tb.innerHTML='<button class="btn sec" onclick="window.print()">Imprimir / Salvar PDF</button>';
+    document.getElementById('content').insertBefore(tb,document.getElementById('content').firstChild);
+  }
+})();
+</script>
+</body>
+</html>

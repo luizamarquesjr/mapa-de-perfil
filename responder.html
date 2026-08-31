@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Questionário de Perfil</title>
+<style>
+  :root{--ink:#1c2430;--muted:#5c6675;--line:#e4e8ee;--soft:#f5f7f9;--navy:#1f2d3d;--gold:#b8860b;--acc:#3F6EA5;--ok:#2e7d5b;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Helvetica Neue",Arial,sans-serif;color:var(--ink);background:#eef1f5;line-height:1.5;}
+  .wrap{max-width:760px;margin:0 auto;padding:0 16px 80px;}
+  header.top{background:linear-gradient(125deg,#1b2836,#33475e);color:#fff;padding:30px 22px;border-radius:0 0 16px 16px;}
+  header.top .kick{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:#9fb6d0;font-weight:700;}
+  header.top h1{font-size:26px;font-weight:800;margin:6px 0 8px;letter-spacing:-.3px;}
+  header.top p{font-size:13.5px;color:#c7d4e2;max-width:640px;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:13px;padding:20px 22px;margin-top:18px;box-shadow:0 1px 3px rgba(20,30,45,.04);}
+  .card h2{font-size:16px;color:var(--navy);margin-bottom:10px;}
+  .disc{background:#fff8e8;border:1px solid #f0e2bf;border-radius:10px;padding:12px 15px;font-size:12.5px;color:#6b5a2a;margin-top:14px;}
+  .disc b{color:#5a4a1e;}
+  .field{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px;}
+  .field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px;}
+  .field input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-size:14px;font-family:inherit;}
+  .field input:focus{outline:none;border-color:var(--acc);}
+  .q{background:#fff;border:1px solid var(--line);border-radius:12px;padding:15px 18px;margin-top:12px;}
+  .q.miss{border-color:#e0b4b4;background:#fdf6f6;}
+  .q .qt{font-size:14.5px;font-weight:600;color:var(--ink);margin-bottom:11px;}
+  .q .qn{color:var(--acc);font-weight:800;margin-right:7px;}
+  .opts{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;}
+  .opt{border:1.5px solid var(--line);border-radius:9px;padding:9px 5px;text-align:center;cursor:pointer;font-size:11px;color:var(--muted);transition:all .12s;user-select:none;line-height:1.25;}
+  .opt .dot{display:block;width:15px;height:15px;border-radius:50%;border:2px solid #cfd6df;margin:0 auto 6px;}
+  .opt:hover{border-color:var(--acc);}
+  .opt.sel{border-color:var(--acc);background:var(--acc);color:#fff;font-weight:700;}
+  .opt.sel .dot{border-color:#fff;background:#fff;}
+  .progress{position:sticky;top:0;z-index:20;background:rgba(238,241,245,.95);backdrop-filter:blur(4px);padding:12px 16px;margin:0 -16px;border-bottom:1px solid var(--line);}
+  .pbar{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:12px;}
+  .ptrack{flex:1;height:9px;background:#dde3ea;border-radius:5px;overflow:hidden;}
+  .pfill{height:100%;background:var(--ok);width:0;transition:width .25s;}
+  .pnum{font-size:12px;font-weight:800;color:var(--navy);white-space:nowrap;}
+  .actions{margin-top:22px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+  .btn{background:var(--navy);color:#fff;border:none;border-radius:10px;padding:13px 22px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;}
+  .btn:hover{background:#2b3d52;}.btn:disabled{opacity:.5;cursor:default;}
+  .btn.sec{background:#fff;color:var(--navy);border:1.5px solid var(--line);}
+  .btn.ok{background:var(--ok);}
+  .hint{font-size:12px;color:var(--muted);}
+  .sec-h{margin-top:26px;font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);}
+  #done{display:none;text-align:center;}
+  #done .big{font-size:46px;}
+  @media(max-width:560px){.opt{font-size:9.5px;padding:8px 2px;}.field{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap" style="padding-bottom:0;">
+  <div class="kick">Mapa de Perfil · Estilo, Riscos & Valores</div>
+  <h1>Questionário de Perfil</h1>
+  <p>Responda com sinceridade, pensando em como você realmente é — não em como gostaria de ser. Não há respostas certas ou erradas. Leva cerca de 10–15 minutos.</p>
+</div></header>
+
+<div class="progress"><div class="pbar"><div class="ptrack"><div class="pfill" id="pfill"></div></div><div class="pnum"><span id="pdone">0</span>/<span id="ptot">0</span></div></div></div>
+
+<div class="wrap" id="form">
+  <div class="card">
+    <h2>Seus dados</h2>
+    <div class="field">
+      <div><label>Nome completo *</label><input id="nome" placeholder="Seu nome"></div>
+      <div><label>E-mail * (para receber seu relatório)</label><input id="email" type="email" placeholder="voce@email.com"></div>
+    </div>
+    <div class="disc"><b>Sobre este teste:</b> ferramenta educativa <b>inspirada</b> no modelo de três dimensões (estilo do dia a dia, riscos sob estresse e valores). <b>Não</b> é o Hogan Assessment, não utiliza suas perguntas e as pontuações são referenciadas na própria escala — não são percentis clínicos ou normatizados. Suas respostas serão enviadas ao aplicador, que preparará seu relatório.</div>
+  </div>
+  <div class="sec-h">As afirmações</div>
+  <div id="items"></div>
+  <div class="actions">
+    <button class="btn" id="finish">Concluir e enviar minhas respostas</button>
+    <span class="hint" id="warn"></span>
+  </div>
+</div>
+
+<div class="wrap" id="done">
+  <div class="card" style="border-color:#bfe0cd;background:#f4fbf7;">
+    <div class="big">✓</div>
+    <h2 style="color:var(--ok)">Respostas enviadas com sucesso!</h2>
+    <p style="font-size:14px;margin:8px 0;">Obrigado por participar. Seu relatório será preparado e enviado para o e-mail informado. Você já pode fechar esta página.</p>
+    <div id="fallback" style="display:none;margin-top:14px;">
+      <p class="hint" style="margin-bottom:10px;">Não foi possível enviar automaticamente. Baixe o arquivo abaixo e envie para quem aplicou o teste:</p>
+      <button class="btn ok" id="dl">⬇ Baixar minhas respostas (.json)</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/config.js"></script>
+<script src="assets/core.js"></script>
+<script src="assets/api.js"></script>
+<script>
+(function(){
+  var H=window.HOGAN, answers={}, items=H.shuffledItems(), record=null;
+  var itemsEl=document.getElementById('items');
+  document.getElementById('ptot').textContent=items.length;
+  items.forEach(function(it,idx){
+    var q=document.createElement('div'); q.className='q'; q.id='q_'+it.id;
+    var opts='';
+    for(var v=1;v<=5;v++){opts+='<div class="opt" data-id="'+it.id+'" data-v="'+v+'"><span class="dot"></span>'+H.LIKERT[v-1]+'</div>';}
+    q.innerHTML='<div class="qt"><span class="qn">'+(idx+1)+'.</span>'+it.text+'</div><div class="opts">'+opts+'</div>';
+    itemsEl.appendChild(q);
+  });
+  itemsEl.addEventListener('click',function(e){
+    var o=e.target.closest('.opt'); if(!o)return;
+    var id=o.dataset.id, v=o.dataset.v; answers[id]=+v;
+    var box=document.getElementById('q_'+id); box.classList.remove('miss');
+    box.querySelectorAll('.opt').forEach(function(x){x.classList.toggle('sel',x.dataset.v===v);});
+    var n=Object.keys(answers).length;
+    document.getElementById('pdone').textContent=n;
+    document.getElementById('pfill').style.width=(n/items.length*100)+'%';
+  });
+  function slug(s){return (s||'perfil').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-|-$/g,'').toLowerCase();}
+  function validEmail(x){return /.+@.+\..+/.test(x);}
+
+  document.getElementById('finish').addEventListener('click',function(){
+    var btn=this, warn=document.getElementById('warn');
+    var nome=document.getElementById('nome').value.trim();
+    var email=document.getElementById('email').value.trim();
+    var missing=items.filter(function(it){return answers[it.id]==null;});
+    if(!nome){warn.textContent='Preencha seu nome.';document.getElementById('nome').focus();return;}
+    if(!validEmail(email)){warn.textContent='Informe um e-mail válido.';document.getElementById('email').focus();return;}
+    if(missing.length){
+      warn.textContent='Faltam '+missing.length+' resposta(s).';
+      missing.forEach(function(it){document.getElementById('q_'+it.id).classList.add('miss');});
+      document.getElementById('q_'+missing[0].id).scrollIntoView({behavior:'smooth',block:'center'});
+      return;
+    }
+    warn.textContent=''; btn.disabled=true; btn.textContent='Enviando...';
+    record={v:H.VERSION,name:nome,email:email,date:new Date().toISOString(),answers:answers};
+
+    function showDone(withFallback){
+      document.getElementById('form').style.display='none';
+      document.querySelector('.progress').style.display='none';
+      document.getElementById('done').style.display='block';
+      window.scrollTo(0,0);
+      if(withFallback){
+        document.getElementById('fallback').style.display='block';
+        document.getElementById('dl').onclick=function(){
+          var blob=new Blob([JSON.stringify(record,null,2)],{type:'application/json'});
+          var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Perfil_'+slug(nome)+'.json';
+          document.body.appendChild(a);a.click();a.remove();
+        };
+      }
+    }
+    if(window.API && API.configured()){
+      API.save(record).then(function(res){
+        if(res&&res.ok) showDone(false); else showDone(true);
+      }).catch(function(){ showDone(true); });
+    } else {
+      showDone(true);
+    }
+  });
+})();
+</script>
+</body>
+</html>

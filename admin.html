@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel do Aplicador</title>
+<style>
+  :root{--ink:#1c2430;--muted:#5c6675;--line:#e4e8ee;--soft:#f5f7f9;--navy:#1f2d3d;--gold:#b8860b;--acc:#3F6EA5;--ok:#2e7d5b;--hpi:#F2A900;--hds:#D6001C;--mvpi:#3F6EA5;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Helvetica Neue",Arial,sans-serif;color:var(--ink);background:#eef1f5;line-height:1.5;}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 18px 70px;}
+  header.top{background:linear-gradient(125deg,#1b2836,#33475e);color:#fff;padding:24px 22px;border-radius:0 0 16px 16px;margin-bottom:18px;}
+  header.top .kick{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:#9fb6d0;font-weight:700;}
+  header.top h1{font-size:24px;font-weight:800;margin:6px 0 4px;}
+  header.top .sub{font-size:12.5px;color:#c7d4e2;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:13px;padding:18px 20px;margin-bottom:18px;}
+  .btn{background:var(--navy);color:#fff;border:none;border-radius:9px;padding:9px 15px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+  .btn:hover{background:#2b3d52;}.btn:disabled{opacity:.5;cursor:default;}
+  .btn.sec{background:#fff;color:var(--navy);border:1.5px solid var(--line);}
+  .btn.ok{background:var(--ok);}.btn.sm{padding:6px 11px;font-size:12px;}
+  .btn.danger{background:#fff;color:#b5462f;border:1.5px solid #eccdc6;}
+  .toolbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;}
+  .grow{flex:1;}
+  input.txt{padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-size:14px;font-family:inherit;width:100%;}
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:9px 10px;border-bottom:2px solid var(--line);white-space:nowrap;}
+  td{padding:10px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle;}
+  tr:hover td{background:#fafbfc;}
+  .who b{color:var(--navy);}.who .dt{font-size:11px;color:var(--muted);}
+  .chips{display:flex;flex-wrap:wrap;gap:5px;}
+  .chip{font-size:10px;font-weight:700;color:#fff;padding:2px 7px;border-radius:20px;}
+  .chip.hpi{background:var(--hpi);}.chip.hds{background:var(--hds);}.chip.mvpi{background:var(--mvpi);}
+  .muted{color:var(--muted);font-size:12px;}
+  .rowacts{display:flex;gap:5px;flex-wrap:wrap;}
+  .empty{text-align:center;color:var(--muted);font-size:13px;padding:26px;}
+  .count{font-size:13px;font-weight:700;color:var(--navy);}
+  /* login */
+  #login{max-width:440px;margin:60px auto 0;}
+  #login .card{text-align:left;}
+  #login h2{font-size:18px;color:var(--navy);margin-bottom:6px;}
+  #login p{font-size:13px;color:var(--muted);margin-bottom:14px;}
+  /* modal */
+  .modal{position:fixed;inset:0;background:rgba(20,30,45,.55);display:none;z-index:50;padding:24px;overflow:auto;}
+  .modal.open{display:block;}
+  .sheet{max-width:720px;margin:20px auto;background:#fff;border-radius:14px;padding:22px 24px;}
+  .sheet h3{font-size:17px;color:var(--navy);margin-bottom:4px;}
+  .sheet .close{float:right;cursor:pointer;font-size:22px;color:var(--muted);line-height:1;}
+  .ans{border-bottom:1px solid var(--soft);padding:7px 0;font-size:13px;display:flex;justify-content:space-between;gap:14px;}
+  .ans .v{font-weight:700;color:var(--acc);white-space:nowrap;}
+  .ans .sc{font-size:10px;color:var(--muted);}
+  /* toast */
+  #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:80;display:none;box-shadow:0 6px 20px rgba(0,0,0,.25);}
+  #offscreen{position:fixed;left:-99999px;top:0;width:800px;background:#fff;}
+  .warnbox{background:#fff8e8;border:1px solid #f0e2bf;border-radius:10px;padding:11px 14px;font-size:12px;color:#6b5a2a;margin-top:12px;}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="card">
+    <h2>Painel do Aplicador</h2>
+    <p>Digite a <b>chave de administrador</b> (a que você definiu nas Propriedades do script). Ela não fica salva no site.</p>
+    <input class="txt" id="keyin" type="password" placeholder="Chave de administrador" style="margin-bottom:10px;">
+    <button class="btn" id="enter">Entrar</button>
+    <div class="warnbox" id="cfgwarn" style="display:none;">⚠ O site ainda não está conectado ao backend. Edite <b>assets/config.js</b> com a URL do seu Apps Script.</div>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
+  <header class="top"><div class="wrap" style="padding-bottom:0;">
+    <div class="kick">Painel do Aplicador</div>
+    <h1>Respondentes &amp; Relatórios</h1>
+    <div class="sub">As respostas chegam automaticamente conforme cada pessoa conclui o questionário.</div>
+  </div></header>
+
+  <div class="wrap">
+    <div class="card">
+      <div class="toolbar">
+        <button class="btn sec sm" id="refresh">↻ Atualizar</button>
+        <span class="count"><span id="n">0</span> respondente(s)</span>
+        <span class="grow"></span>
+        <button class="btn sec sm" id="compare">Comparar selecionados</button>
+        <button class="btn sec sm" id="team">Resumo do time</button>
+        <button class="btn sec sm" id="csv">⬇ CSV</button>
+        <button class="btn sm" id="logout">Sair</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar" style="margin-bottom:12px;">
+        <label style="font-size:13px;display:flex;align-items:center;gap:7px;"><input type="checkbox" id="selall"> Selecionar todos</label>
+        <span class="grow"></span>
+        <button class="btn ok sm" id="sendsel">✉ Enviar relatório aos selecionados</button>
+      </div>
+      <div id="tablewrap"><div class="empty">Carregando...</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
+<div id="toast"></div>
+<div id="offscreen"></div>
+
+<script src="assets/config.js"></script>
+<script src="assets/core.js"></script>
+<script src="assets/report.js"></script>
+<script src="assets/api.js"></script>
+<script src="assets/html2pdf.bundle.min.js"></script>
+<script>
+(function(){
+  var H=window.HOGAN, people=[], KEYSS='mp_adminKey';
+  var adminKey=sessionStorage.getItem(KEYSS)||'';
+
+  if(!(window.API && API.configured())) document.getElementById('cfgwarn').style.display='block';
+
+  function toast(msg,ms){var t=document.getElementById('toast');t.textContent=msg;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(function(){t.style.display='none';},ms||2600);}
+
+  document.getElementById('enter').onclick=doLogin;
+  document.getElementById('keyin').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+  function doLogin(){
+    var k=document.getElementById('keyin').value.trim();
+    if(!k){return;}
+    adminKey=k; sessionStorage.setItem(KEYSS,k);
+    enterApp();
+  }
+  function enterApp(){
+    document.getElementById('login').style.display='none';
+    document.getElementById('app').style.display='block';
+    load();
+  }
+  if(adminKey) enterApp();
+
+  document.getElementById('logout').onclick=function(){sessionStorage.removeItem(KEYSS);location.reload();};
+  document.getElementById('refresh').onclick=load;
+
+  function load(){
+    document.getElementById('tablewrap').innerHTML='<div class="empty">Carregando...</div>';
+    API.list(adminKey).then(function(res){
+      if(!res||!res.ok){
+        if(res&&/chave/i.test(res.error||'')){toast('Chave inválida.');sessionStorage.removeItem(KEYSS);setTimeout(function(){location.reload();},900);return;}
+        document.getElementById('tablewrap').innerHTML='<div class="empty">Erro: '+((res&&res.error)||'sem resposta do backend')+'</div>';return;
+      }
+      people=res.people||[]; render();
+    }).catch(function(e){document.getElementById('tablewrap').innerHTML='<div class="empty">Falha de conexão com o backend.</div>';});
+  }
+
+  function topScales(sc,list,n,dir){return list.slice().sort(function(a,b){return dir>0?sc[b]-sc[a]:sc[a]-sc[b];}).slice(0,n);}
+  function chips(arr,cls,sc){return arr.map(function(s){return '<span class="chip '+cls+'">'+H.SCALES[s].name+' '+sc[s]+'</span>';}).join('');}
+  function esc(s){return (s||'').toString().replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});}
+  function fmtDate(d){if(!d)return '';try{return new Date(d).toLocaleDateString('pt-BR');}catch(e){return d;}}
+
+  function render(){
+    document.getElementById('n').textContent=people.length;
+    var w=document.getElementById('tablewrap');
+    if(!people.length){w.innerHTML='<div class="empty">Nenhuma resposta ainda. Compartilhe o link do questionário.</div>';return;}
+    var h='<table><thead><tr><th></th><th>Respondente</th><th>Estilo</th><th>Valores</th><th>Riscos</th><th>Ações</th></tr></thead><tbody>';
+    people.forEach(function(p,i){
+      var sc=H.score(p.answers);
+      var hpiTop=topScales(sc,H.HPI,2,1).filter(function(s){return sc[s]>=60;});
+      var valTop=topScales(sc,H.MVPI,2,1).filter(function(s){return sc[s]>=60;});
+      var risks=H.HDS.filter(function(s){return sc[s]>=70;}).sort(function(a,b){return sc[b]-sc[a];}).slice(0,2);
+      h+='<tr><td><input type="checkbox" class="rsel" data-i="'+i+'"></td>'
+        +'<td class="who"><b>'+esc(p.name)+'</b><div class="dt">'+esc(p.email)+' · '+fmtDate(p.date)+'</div></td>'
+        +'<td><div class="chips">'+(chips(hpiTop,'hpi',sc)||'<span class="muted">—</span>')+'</div></td>'
+        +'<td><div class="chips">'+(chips(valTop,'mvpi',sc)||'<span class="muted">—</span>')+'</div></td>'
+        +'<td><div class="chips">'+(risks.length?chips(risks,'hds',sc):'<span class="muted">—</span>')+'</div></td>'
+        +'<td><div class="rowacts">'
+          +'<button class="btn sec sm" data-act="ans" data-i="'+i+'">Respostas</button>'
+          +'<button class="btn sec sm" data-act="rep" data-i="'+i+'">Relatório</button>'
+          +'<button class="btn ok sm" data-act="send" data-i="'+i+'">✉ Enviar</button>'
+          +'<button class="btn danger sm" data-act="del" data-i="'+i+'">Excluir</button>'
+        +'</div></td></tr>';
+    });
+    h+='</tbody></table>';
+    w.innerHTML=h;
+    w.querySelectorAll('button[data-act]').forEach(function(b){
+      b.onclick=function(){actions[b.dataset.act](people[+b.dataset.i]);};
+    });
+    document.getElementById('selall').checked=false;
+  }
+  document.getElementById('selall').onchange=function(){
+    var c=this.checked; document.querySelectorAll('.rsel').forEach(function(x){x.checked=c;});
+  };
+  function selected(){
+    var out=[]; document.querySelectorAll('.rsel:checked').forEach(function(x){out.push(people[+x.dataset.i]);});
+    return out;
+  }
+
+  var actions={
+    ans:function(p){
+      var sc=H.score(p.answers);
+      var byScale={};
+      H.ITEMS.forEach(function(it){(byScale[it.scale]=byScale[it.scale]||[]).push(it);});
+      var body='';
+      H.ORDER.forEach(function(sck){
+        body+='<div style="margin-top:12px;font-weight:800;color:#1f2d3d;font-size:13px;">'+H.SCALES[sck].name+' <span style="color:#8a94a3;font-weight:600;">('+sc[sck]+')</span></div>';
+        byScale[sck].forEach(function(it){
+          var v=p.answers[it.id]; var lbl=v?H.LIKERT[v-1]:'—';
+          body+='<div class="ans"><div>'+esc(it.text)+(it.key<0?' <span class="sc">(invertida)</span>':'')+'</div><div class="v">'+lbl+'</div></div>';
+        });
+      });
+      openModal('<span class="close" onclick="document.getElementById(\'modal\').classList.remove(\'open\')">×</span>'
+        +'<h3>Respostas — '+esc(p.name)+'</h3><div class="muted" style="margin-bottom:6px;">'+esc(p.email)+'</div>'+body);
+    },
+    rep:function(p){ window.open('resultado.html#'+H.enc(p),'_blank'); },
+    del:function(p){
+      if(!confirm('Excluir '+p.name+'? Isso remove a linha da planilha.'))return;
+      API.remove(p.id,adminKey).then(function(r){if(r&&r.ok){toast('Excluído.');load();}else toast('Falha ao excluir.');});
+    },
+    send:function(p){ sendOne(p).then(function(){toast('Enviado para '+p.name+'.');}).catch(function(e){toast('Falha: '+e);}); }
+  };
+
+  function slug(s){return (s||'perfil').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-|-$/g,'').toLowerCase();}
+
+  function makePdfBase64(record){
+    var holder=document.getElementById('offscreen');
+    holder.innerHTML=''; var box=document.createElement('div'); holder.appendChild(box);
+    REPORT.render(box, record);
+    var opt={margin:[8,8,10,8],image:{type:'jpeg',quality:0.96},
+      html2canvas:{scale:2,backgroundColor:'#ffffff',useCORS:true,windowWidth:820},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+      pagebreak:{mode:['css','legacy'],avoid:['.card','.kard','.qd','.rec','.insight']}};
+    return html2pdf().set(opt).from(box).toPdf().get('pdf').then(function(pdf){
+      var uri=pdf.output('datauristring');
+      return uri.substring(uri.indexOf(',')+1);
+    });
+  }
+
+  function sendOne(p){
+    if(!p.email) return Promise.reject('sem e-mail');
+    var cfg=window.APP_CONFIG||{};
+    return makePdfBase64(p).then(function(b64){
+      return API.send({
+        to:p.email, name:p.name,
+        subject:(cfg.EMAIL_SUBJECT||'Seu relatório'),
+        intro:(cfg.EMAIL_INTRO||'Segue seu relatório em anexo.'),
+        senderName:(cfg.APP_TITLE||'Mapa de Perfil'),
+        pdfBase64:b64, filename:'Perfil_'+slug(p.name)+'.pdf'
+      }, adminKey);
+    }).then(function(res){ if(!res||!res.ok) throw (res&&res.error)||'erro no envio'; });
+  }
+
+  document.getElementById('sendsel').onclick=function(){
+    var sel=selected();
+    if(!sel.length){toast('Selecione ao menos um respondente.');return;}
+    if(!confirm('Enviar o relatório por e-mail para '+sel.length+' respondente(s)?'))return;
+    var btn=this; btn.disabled=true;
+    var ok=0,fail=0,i=0;
+    (function next(){
+      if(i>=sel.length){btn.disabled=false;toast('Concluído: '+ok+' enviado(s), '+fail+' falha(s).',4000);return;}
+      var p=sel[i++]; toast('Enviando '+i+'/'+sel.length+' — '+p.name+'...',60000);
+      sendOne(p).then(function(){ok++;}).catch(function(){fail++;}).then(next);
+    })();
+  };
+
+  document.getElementById('compare').onclick=function(){
+    var sel=selected(); if(sel.length<2){toast('Selecione 2 ou mais para comparar.');return;}
+    window.open('comparativo.html#'+H.enc(sel.map(function(p){return {name:p.name,email:p.email,date:p.date,answers:p.answers};})),'_blank');
+  };
+  document.getElementById('team').onclick=function(){ window.open('resumo-time.html','_blank'); };
+
+  document.getElementById('csv').onclick=function(){
+    if(!people.length){toast('Nada para exportar.');return;}
+    var cols=['Nome','Email','Data'].concat(H.ORDER.map(function(s){return H.SCALES[s].name;}));
+    var rows=[cols.join(';')];
+    people.forEach(function(p){var sc=H.score(p.answers);
+      rows.push([csv(p.name),csv(p.email),csv(fmtDate(p.date))].concat(H.ORDER.map(function(s){return sc[s]!=null?sc[s]:'';})).join(';'));});
+    var blob=new Blob(['﻿'+rows.join('\n')],{type:'text/csv;charset=utf-8'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Respondentes.csv';document.body.appendChild(a);a.click();a.remove();
+  };
+  function csv(s){s=(s||'').toString();return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
+
+  function openModal(html){document.getElementById('sheet').innerHTML=html;document.getElementById('modal').classList.add('open');}
+  document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+})();
+</script>
+</body>
+</html>
