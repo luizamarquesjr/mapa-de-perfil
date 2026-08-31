@@ -354,15 +354,15 @@
     var highVal=MVPI_ORDER.filter(function(s){return scores[s]>=70;}).sort(function(a,b){return scores[b]-scores[a];});
 
     var themes=[
-      {k:'relacional',v:av(['SEN','ALT','AFI','SOC']),label:'líder relacional e voltado a pessoas',desc:'lidera pelo vínculo, pelo acolhimento e pela construção de relações de confiança'},
-      {k:'estrutura',v:av(['PRU','TRA','SEG']),label:'líder estruturado e confiável',desc:'traz método, consistência e segurança, entregando o que promete'},
-      {k:'resultado',v:av(['AMB','POD','COM','REC']),label:'líder orientado a resultado',desc:'move-se por metas, influência e entrega de negócio'},
-      {k:'estrategico',v:av(['INQ','CIE','IMA']),label:'líder estratégico e criativo',desc:'pensa o quadro geral, gera ideias e resolve problemas com análise'}
+      {k:'relacional',v:av(['SEN','ALT','AFI','SOC']),label:'de perfil relacional e voltado(a) a pessoas',desc:'atua pelo vínculo, pelo acolhimento e pela construção de relações de confiança'},
+      {k:'estrutura',v:av(['PRU','TRA','SEG']),label:'estruturado(a) e confiável',desc:'traz método, consistência e segurança, entregando o que promete'},
+      {k:'resultado',v:av(['AMB','POD','COM','REC']),label:'orientado(a) a resultado',desc:'move-se por metas, entrega e impacto no negócio'},
+      {k:'estrategico',v:av(['INQ','CIE','IMA']),label:'de perfil estratégico e criativo',desc:'pensa o quadro geral, gera ideias e resolve problemas com análise'}
     ].sort(function(a,b){return b.v-a.v;});
 
     // ----- Resumo (parágrafos) -----
-    var p1='No conjunto, o perfil descreve um '+themes[0].label
-      +(themes[1].v>=55?', com forte traço de '+themes[1].label.replace('líder ','')+'':'')
+    var p1='No conjunto, este é o perfil de um(a) profissional '+themes[0].label
+      +(themes[1].v>=55?', também '+themes[1].label:'')
       +'. Na prática, '+themes[0].desc+(themes[1].v>=55?'; ao mesmo tempo, '+themes[1].desc:'')+'.';
     var nucleo=highHPI.slice(0,4).map(function(s){return nm(s)+' ('+scores[s]+')';});
     var p2='';
@@ -390,8 +390,8 @@
       :scores.ARR>=70?'manter os ouvidos abertos ao feedback, mesmo quando confia na própria posição'
       :risks.length?'transformar o principal risco ('+nm(risks[0])+') em consciência e autocontrole'
       :'aprofundar suas forças e buscar contextos que as exijam plenamente';
-    var oQueDiz='Essa análise sugere que sua autoridade vem menos da imposição e mais '+vem+'. '
-      +(tensoes.length?'Você carrega tensões produtivas — '+list(tensoes)+'. Bem administradas, tornam sua liderança mais completa; mal administradas, viram os pontos de atenção acima. ':'')
+    var oQueDiz='Essa análise sugere que sua força vem menos da imposição e mais '+vem+'. '
+      +(tensoes.length?'Você carrega tensões produtivas — '+list(tensoes)+'. Bem administradas, tornam sua atuação mais completa; mal administradas, viram os pontos de atenção acima. ':'')
       +'O maior salto de desenvolvimento tende a estar em '+foco+'.';
 
     var fraseCore=themes[0].k==='relacional'?'conquista pelo cuidado, pela relação e pela confiança'
@@ -399,7 +399,7 @@
       :themes[0].k==='resultado'?'conquista pela entrega, pela ambição e pelo foco em resultado'
       :'conquista pela visão, pelas ideias e pela clareza de raciocínio';
     var fraseRisco=risks.length?' — cujo maior desafio é '+((scores.SEN>=75||risks.indexOf('PAS')>=0)?'encarar o conflito e o feedback de frente':scores.ARR>=70?'manter os ouvidos abertos ao feedback':'gerir '+nm(risks[0]).toLowerCase()+' sob pressão'):' — com bom equilíbrio entre forças e autocontrole';
-    var frase='Um líder que '+fraseCore+fraseRisco+'.';
+    var frase='Um(a) profissional que '+fraseCore+fraseRisco+'.';
 
     // ----- Pontos fortes (título + explicação) -----
     var fortes=[];
