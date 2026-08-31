@@ -86,13 +86,16 @@
         + '<h1>'+esc(record.name||'Respondente')+'</h1>'
         + '<div class="who">'+(record.email?esc(record.email)+' · ':'')+'Respondido em '+fmtDate(record.date)+'</div></div>'
       + '<div class="disc"><b>Importante:</b> ferramenta educativa inspirada no modelo de três dimensões (estilo, riscos e valores). Não é o Hogan Assessment nem usa suas perguntas. Pontuações de 0–100 referenciadas na própria escala — não são percentis normatizados. Leitura: abaixo de 30 ou acima de 70 = traço marcante; entre 30 e 70 = média.</div>'
-      + '<div class="card"><h2>Resumo do perfil</h2><p class="lead">'+esc(a.resumo)+'</p></div>'
+      + '<div class="card"><h2>Resumo do perfil</h2>'
+        + a.resumoParas.map(function(x){return '<p class="lead">'+esc(x)+'</p>';}).join('')
+        + '<div class="insight" style="margin-top:10px;"><b>Em uma frase:</b> '+esc(a.frase)+'</div></div>'
+      + '<div class="card"><h2>O que essa análise diz sobre você</h2><p class="lead">'+esc(a.oQueDiz)+'</p></div>'
       + '<div class="card"><h2>Estilo no dia a dia <span class="tag" style="background:#F2A900">HPI</span></h2>'+bars(H.HPI,'HPI',scores)+'</div>'
       + '<div class="card"><h2>Riscos sob estresse <span class="tag" style="background:#D6001C">HDS</span></h2>'+bars(H.HDS,'HDS',scores)+'</div>'
       + '<div class="card"><h2>Valores e motivações <span class="tag" style="background:#3F6EA5">MVPI</span></h2>'+bars(H.MVPI,'MVPI',scores)+'</div>'
       + '<div class="card"><h2>Pontos fortes e de atenção</h2><div class="two">'
-        + '<div class="kard pos"><h3>Pontos fortes</h3><ul class="clean pos">'+a.fortes.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></div>'
-        + '<div class="kard neg"><h3>Pontos de atenção</h3><ul class="clean neg">'+a.atencao.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></div>'
+        + '<div class="kard pos"><h3>Pontos fortes</h3><ul class="clean pos">'+a.fortes.map(function(x){return '<li><b>'+esc(x.t)+'.</b> '+esc(x.p)+'</li>';}).join('')+'</ul></div>'
+        + '<div class="kard neg"><h3>Pontos de atenção</h3><ul class="clean neg">'+a.atencao.map(function(x){return '<li><b>'+esc(x.t)+'.</b> '+esc(x.p)+'</li>';}).join('')+'</ul></div>'
       + '</div></div>'
       + insHTML
       + '<div class="card"><h2>Recomendações de desenvolvimento</h2><div class="recg">'
@@ -103,7 +106,7 @@
         + '<div class="qd w"><h3><span class="l">W</span>Fraquezas</h3><ul>'+a.swot.W.map(li).join('')+'</ul></div>'
         + '<div class="qd o"><h3><span class="l">O</span>Oportunidades</h3><ul>'+a.swot.O.map(li).join('')+'</ul></div>'
         + '<div class="qd t"><h3><span class="l">T</span>Ameaças</h3><ul>'+a.swot.T.map(li).join('')+'</ul></div>'
-      + '</div></div>';
+      + '</div><div class="insight" style="margin-top:12px;"><b>Síntese:</b> '+esc(a.swotSintese)+'</div></div>';
     function li(x){return '<li>'+esc(x)+'</li>';}
   }
 
@@ -211,6 +214,47 @@
     if(hi('ARR')) donts.push('Apelar só para a hierarquia (“porque eu mandei”) sem argumentos.');
     if(!donts.length) donts.push('Feedback vago ou tardio — prefira específico e no momento.');
 
+    // Retrato para o líder + cenários
+    var a=H.analyze(sc);
+    var topVal=H.MVPI.filter(hi).sort(function(x,y){return sc[y]-sc[x];})[0];
+    var topRisk=H.HDS.filter(hi).sort(function(x,y){return sc[y]-sc[x];})[0];
+    var retrato='<b>Em uma frase:</b> '+esc(a.frase)+'<br><b>Para você, líder:</b> '
+      +(topVal?'o que mais engaja esta pessoa é '+H.SCALES[topVal].name.toLowerCase():'ela responde a uma combinação de reconhecimento, propósito e resultado')
+      +(topRisk?'; e o principal cuidado sob pressão é '+H.SCALES[topRisk].name.toLowerCase()+'.':'; e não há riscos marcantes sob pressão.')
+      +' As seções abaixo trazem o “como” no dia a dia.';
+
+    var oneone=[];
+    if(lo('AJU')) oneone.push('1:1s mais frequentes e previsíveis: a estabilidade reduz a ansiedade e dá espaço para processar pressões.');
+    else if(hi('AJU')) oneone.push('1:1s podem ser mais espaçados e diretos ao ponto — foque em metas e obstáculos.');
+    if(hi('SEN')||hi('AFI')) oneone.push('Comece pelo lado pessoal antes das tarefas: cria conexão e abre a conversa.');
+    if(hi('PAS')||hi('OBS')) oneone.push('Abra espaço explícito para discordar (“o que você faria diferente?”) — senão o desacordo fica submerso.');
+    if(hi('AMB')||hi('POD')) oneone.push('Dedique parte do encontro a carreira e crescimento: próximos desafios e visibilidade.');
+    if(hi('REC')) oneone.push('Reserve um momento para reconhecer conquistas específicas desde o último 1:1.');
+    if(!oneone.length) oneone.push('Mantenha 1:1s regulares, com metas claras, feedback específico e espaço para dúvidas.');
+
+    var cen=[];
+    var fb=lo('AJU')?'Em privado. Comece pelo reforço positivo, seja específico sobre o comportamento (não a pessoa) e feche com um combinado claro.'
+      :hi('ARR')?'Traga dados e exemplos concretos e peça a visão dela antes de concluir — ela se convence pela lógica, não pela hierarquia.'
+      :'Seja direto e específico, focando no comportamento e no próximo passo.';
+    if(hi('SEN')) fb+=' Deixe claro que o objetivo é ajudar, não criticar.';
+    cen.push({t:'Ao dar um feedback difícil',p:fb});
+    var dg=(hi('CAU')||lo('AJU'))?'Reduza o medo de errar: diga que tentativa faz parte, ofereça uma rede de segurança e comece com um passo pequeno.'
+      :hi('PRU')?'Entregue com clareza de processo, critérios e prazo — ela executa muito bem o que está bem definido.'
+      :(hi('AMB')||hi('POD'))?'Enquadre como oportunidade de crescimento e visibilidade; dê autonomia sobre o “como”.'
+      :'Combine objetivo, prazo e checkpoints, e pergunte como ela pretende fazer.';
+    if(hi('IMA')||hi('INQ')) dg+=' Dê espaço para propor o caminho, mas peça um plano concreto.';
+    cen.push({t:'Ao delegar algo novo ou desafiador',p:dg});
+    var er=lo('AJU')?'Ela já se cobra bastante: foque no aprendizado e no próximo passo, sem dureza e sem plateia.'
+      :hi('ARR')?'Traga os fatos para que ela mesma enxergue o ponto; evite o “eu avisei”.'
+      :'Separe o erro da pessoa e transforme em aprendizado concreto.';
+    if(hi('PER')) er+=' Ajude a dimensionar — nem todo erro é catástrofe.';
+    cen.push({t:'Quando erra ou falha',p:er});
+    var mm={REC:'verifique se o esforço dela tem sido reconhecido — reconhecimento é combustível aqui.',ALT:'reconecte a tarefa ao impacto real em pessoas e clientes.',SEG:'traga previsibilidade e reduza as incertezas do momento.',POD:'ofereça um novo desafio e mais autonomia.',HED:'cheque o clima e a carga de trabalho.',AFI:'reforce o pertencimento e a conexão com o grupo.',TRA:'reconecte ao propósito e aos valores da empresa.',COM:'mostre concretamente como o trabalho dela move os resultados.',CIE:'traga dados que deem sentido ao esforço.',EST:'reconheça a qualidade e o capricho do que ela entrega.'};
+    cen.push({t:'Quando parece desmotivada',p:(topVal&&mm[topVal]?'Comece por aqui: '+mm[topVal]:'Converse abertamente sobre o que mudou e o que ela precisa.')+' Depois, pergunte diretamente o que faria diferença para ela agora.'});
+    var cenHTML=cen.map(function(c){return '<div class="rec"><div class="t">'+esc(c.t)+'</div><div class="p">'+esc(c.p)+'</div></div>';}).join('');
+
+    var resumoLider='Para tirar o melhor desta pessoa, '+(topVal?'alimente '+H.SCALES[topVal].name.toLowerCase():'reconheça o esforço específico')+', dê clareza de expectativas e '+(topRisk?'fique atento a '+H.SCALES[topRisk].name.toLowerCase()+' sob pressão':'mantenha um feedback regular e honesto')+'. A regra de ouro aqui: <b>firme no combinado, caloroso na relação.</b>';
+
     var lider = record.lider ? ' · Líder: '+esc(record.lider) : '';
 
     return ''
@@ -218,15 +262,19 @@
         + '<h1>'+esc(record.name||'Respondente')+'</h1>'
         + '<div class="who">Como liderar melhor esta pessoa'+lider+'</div></div>'
       + '<div class="disc"><b>Documento de gestão — não compartilhar com o avaliado.</b> Orientações para o líder direto atuar melhor com esta pessoa, a partir do seu perfil. Ferramenta educativa; não é o Hogan Assessment.</div>'
+      + '<div class="card"><h2>Retrato para o líder</h2><p class="lead" style="font-size:13px;">'+retrato+'</p></div>'
       + '<div class="card"><h2>✔ Como liderar &amp; motivar</h2><ul class="clean pos">'+motiv.join('')+'</ul>'
         + '<p style="font-size:12.5px;color:var(--muted);margin-top:10px;">'+ambTxt+'</p></div>'
       + '<div class="card"><h2>💬 Como comunicar e dar feedback</h2><ul class="clean" style="list-style:none;">'+com.join('')+'</ul></div>'
       + '<div class="card"><h2>🎯 Como delegar e desenvolver</h2><ul class="clean" style="list-style:none;">'+dev.join('')+'</ul></div>'
+      + '<div class="card"><h2>🗓 Reuniões 1:1 &amp; acompanhamento</h2><ul class="clean" style="list-style:none;">'+oneone.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></div>'
+      + '<div class="card"><h2>Cenários comuns — o que fazer</h2><div class="recg">'+cenHTML+'</div></div>'
       + '<div class="card"><h2>⚠ Riscos a gerenciar (sinais sob estresse)</h2><ul class="clean neg">'+risks.join('')+'</ul></div>'
       + '<div class="card"><h2>Frases que funcionam × o que evitar</h2><div class="two">'
         + '<div class="kard pos"><h3>Use</h3><ul class="clean pos">'+dos.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></div>'
         + '<div class="kard neg"><h3>Evite</h3><ul class="clean neg">'+donts.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></div>'
-      + '</div></div>';
+      + '</div></div>'
+      + '<div class="card"><h2>Em resumo, para o líder</h2><p class="lead" style="font-size:13px;">'+resumoLider+'</p></div>';
   }
   function renderManager(container, record){ ensureCSS(); container.classList.add('rep'); container.innerHTML=managerInnerHTML(record); }
 

@@ -294,68 +294,169 @@
 
   function band(v){ return v>=70?'high':(v<=30?'low':'mid'); }
 
-  // ---- Síntese automática ---------------------------------------------
+  // ---- Bibliotecas de texto (relatório aprofundado) -------------------
+  var FORTE_LONG = {
+    AJU:{t:'Firmeza emocional',p:'Mantém a serenidade sob pressão e transforma a crítica em aprendizado, sem se abalar por muito tempo.'},
+    AMB:{t:'Motor de iniciativa',p:'Assume a frente, define metas ambiciosas e mobiliza esforço próprio e do time para alcançá-las.'},
+    SOC:{t:'Presença que engaja',p:'Comunica com naturalidade, cria conexão rápida e energiza o grupo à sua volta.'},
+    SEN:{t:'Inteligência relacional',p:'Lê o clima, acolhe e constrói relações de confiança — um talento raro para lidar com pessoas.'},
+    PRU:{t:'Confiabilidade em ação',p:'Organiza, cumpre prazos e respeita processos; é a pessoa em quem o time pode contar.'},
+    INQ:{t:'Mente estratégica',p:'Curiosa e fértil em ideias, enxerga o quadro geral e propõe caminhos novos.'},
+    APR:{t:'Sede de aprender',p:'Valoriza estudo e atualização, o que sustenta um crescimento contínuo.'},
+    REC:{t:'Movida a reconhecimento',p:'Entrega o seu melhor quando o bom trabalho é notado e celebrado.'},
+    POD:{t:'Vontade de influenciar',p:'Busca protagonismo e ocupa com desenvoltura espaços de decisão.'},
+    HED:{t:'Leveza produtiva',p:'Valoriza um bom clima e ajuda a manter o astral e a energia do time.'},
+    ALT:{t:'Vocação de servir',p:'Realiza-se ao ajudar pessoas e clientes e ao entregar um serviço de excelência.'},
+    AFI:{t:'Construtor de vínculos',p:'Cultiva relações e fortalece o senso de pertencimento do grupo.'},
+    TRA:{t:'Bússola de valores',p:'Age por princípios e preza a coerência entre discurso, prática e propósito.'},
+    SEG:{t:'Âncora de estabilidade',p:'Traz consistência e reduz a ansiedade do time diante da incerteza.'},
+    COM:{t:'Foco em resultado',p:'Conecta o trabalho a metas, números e à saúde do negócio.'},
+    EST:{t:'Padrão de qualidade',p:'Cuida da forma, do acabamento e da experiência final do que entrega.'},
+    CIE:{t:'Rigor analítico',p:'Decide com dados, lógica e evidências, evitando achismos.'}
+  };
+  var ATTN_LONG = {
+    TEM:{t:'Volatilidade sob pressão',p:'O humor oscila e as reações ganham intensidade, o que pode contaminar o clima e decisões tomadas no calor do momento.'},
+    CET:{t:'Desconfiança',p:'A leitura crítica pode virar suspeita de segundas intenções onde não há, minando a colaboração.'},
+    CAU:{t:'Excesso de cautela',p:'O medo de errar adia decisões e faz perder oportunidades.'},
+    RES:{t:'Distanciamento',p:'Resolver tudo sozinho e afastar-se das pessoas enfraquece o vínculo com o time.'},
+    PAS:{t:'Resistência velada',p:'Concordar na frente e resistir por baixo gera ruído, retrabalho e mágoas não ditas.'},
+    ARR:{t:'Autoconfiança em excesso',p:'Pode fechar os ouvidos, dificultando admitir erro e absorver feedback.'},
+    ARD:{t:'Impulsividade',p:'A ousadia pode levar a assumir riscos pela emoção, sem medir consequências.'},
+    MEL:{t:'Busca por holofote',p:'Querer o centro das atenções pode centralizar e tirar espaço e foco do time.'},
+    IMA:{t:'Ideias fora da realidade',p:'A criatividade pode descolar do prático, com confiança excessiva na própria intuição.'},
+    PER:{t:'Perfeccionismo',p:'Prender-se a detalhes e microgerir atrasa entregas e sufoca a autonomia da equipe.'},
+    OBS:{t:'Dificuldade de se posicionar',p:'A necessidade de agradar leva a ceder demais e a evitar dizer não.'},
+    AJU_LOW:{t:'Sensibilidade ao estresse e ao feedback',p:'A crítica dura desestabiliza e pode gerar ruminação ou reação emocional.'},
+    APR_LOW:{t:'Aprendizado formal',p:'Menos à vontade com teoria e estudo estruturado; prefere a prática — o que pode limitar a absorção de conteúdos formais.'}
+  };
+  var REC_LONG = {
+    TEM:{t:'Regular a reação emocional',p:'Crie um intervalo deliberado entre o gatilho e a resposta: respire, nomeie a emoção e só então aja. Decisões importantes, deixe para quando o humor estiver estável.'},
+    CET:{t:'Confiar com base em fatos',p:'Antes de assumir má intenção, teste a hipótese negativa com dados concretos. Pergunte diretamente em vez de supor — a maioria das pessoas merece o benefício da dúvida.'},
+    CAU:{t:'Decidir com rede de segurança',p:'Defina um prazo-limite para cada decisão e liste o custo de NÃO agir. Comece por escolhas reversíveis para treinar a decisão sob incerteza.'},
+    RES:{t:'Aproximar-se de propósito',p:'Reserve tempo na agenda para ouvir e envolver as pessoas, mesmo quando resolveria mais rápido sozinho. Delegar também é uma forma de conectar.'},
+    PAS:{t:'Praticar o confronto saudável',p:'Diga o desconforto na hora, com cuidado, em vez de acumular. Combine e registre acordos por escrito e trate a divergência como dado, não como ameaça à relação.'},
+    ARR:{t:'Feedback como aliado',p:'Peça feedback ativamente a fontes confiáveis e trate a crítica como informação, não como ataque. Antes de defender a sua posição, repita com suas palavras o ponto do outro.'},
+    ARD:{t:'Risco calculado',p:'Antes de arriscar, valide as consequências com alguém de confiança e transforme a ousadia em experimentos pequenos e controlados, com critério de parada.'},
+    MEL:{t:'Dar o palco',p:'Delegue protagonismo e celebre as conquistas do time antes das suas. Em reuniões, fale por último e pergunte mais do que afirma.'},
+    IMA:{t:'Aterrissar as ideias',p:'Traduza cada ideia em passos concretos e um teste pequeno com dados antes de escalar. Peça a alguém pragmático para pressionar a viabilidade.'},
+    PER:{t:'Definir o "bom o suficiente"',p:'Combine o nível de qualidade necessário para cada entrega e proteja os prazos do excesso de detalhe. Delegue o detalhe e resista à vontade de refazer.'},
+    OBS:{t:'Aprender a dizer não',p:'Pratique recusar com uma alternativa ("isto não consigo, mas aquilo sim"). Separe agradar de ser útil: às vezes o mais útil é discordar.'},
+    AJU:{t:'Fortalecer a resiliência',p:'Construa uma rotina de descompressão e um par de confiança para validar percepções sob estresse. Separe o dado emocional do dado útil antes de responder a uma crítica.'},
+    APR:{t:'Aprender pela prática',p:'Prefira job rotation, mentoria e projetos reais a cursos teóricos; peça para "colocar a mão" e transforme a experiência em aprendizado deliberado.'}
+  };
+
+  // ---- Síntese automática (aprofundada) -------------------------------
   function analyze(scores){
     function nm(sc){return SCALES[sc].name;}
-    var highHPI=HPI_ORDER.filter(function(s){return scores[s]>=70;});
-    var lowHPI =HPI_ORDER.filter(function(s){return scores[s]<=30;});
+    function av(a){var s=0,n=0;a.forEach(function(x){if(scores[x]!=null){s+=scores[x];n++;}});return n?s/n:0;}
+    var highHPI=HPI_ORDER.filter(function(s){return scores[s]>=70;}).sort(function(a,b){return scores[b]-scores[a];});
     var risks  =HDS_ORDER.filter(function(s){return scores[s]>=70;}).sort(function(a,b){return scores[b]-scores[a];});
     var highVal=MVPI_ORDER.filter(function(s){return scores[s]>=70;}).sort(function(a,b){return scores[b]-scores[a];});
 
-    // Resumo
-    var resumo='';
-    if(highHPI.length) resumo+='Estilo marcado por '+list(highHPI.map(nm))+'. ';
-    else resumo+='Estilo de liderança equilibrado, sem traços extremos no HPI. ';
-    if(highVal.length) resumo+='Valores centrais: '+list(highVal.slice(0,4).map(nm))+'. ';
-    if(risks.length) resumo+='Principais riscos sob estresse: '+list(risks.slice(0,3).map(nm))+'.';
-    else resumo+='Nenhum risco de descarrilamento em zona alta — bom autocontrole sob pressão.';
+    var themes=[
+      {k:'relacional',v:av(['SEN','ALT','AFI','SOC']),label:'líder relacional e voltado a pessoas',desc:'lidera pelo vínculo, pelo acolhimento e pela construção de relações de confiança'},
+      {k:'estrutura',v:av(['PRU','TRA','SEG']),label:'líder estruturado e confiável',desc:'traz método, consistência e segurança, entregando o que promete'},
+      {k:'resultado',v:av(['AMB','POD','COM','REC']),label:'líder orientado a resultado',desc:'move-se por metas, influência e entrega de negócio'},
+      {k:'estrategico',v:av(['INQ','CIE','IMA']),label:'líder estratégico e criativo',desc:'pensa o quadro geral, gera ideias e resolve problemas com análise'}
+    ].sort(function(a,b){return b.v-a.v;});
 
-    // Fortes
+    // ----- Resumo (parágrafos) -----
+    var p1='No conjunto, o perfil descreve um '+themes[0].label
+      +(themes[1].v>=55?', com forte traço de '+themes[1].label.replace('líder ','')+'':'')
+      +'. Na prática, '+themes[0].desc+(themes[1].v>=55?'; ao mesmo tempo, '+themes[1].desc:'')+'.';
+    var nucleo=highHPI.slice(0,4).map(function(s){return nm(s)+' ('+scores[s]+')';});
+    var p2='';
+    if(nucleo.length) p2+='O núcleo de forças aparece em '+list(nucleo)+'. ';
+    if(highVal.length) p2+='No que o motiva, os valores centrais são '+list(highVal.slice(0,4).map(function(s){return nm(s)+' ('+scores[s]+')';}))+' — é o tipo de ambiente e de propósito em que essa pessoa rende mais.';
+    if(!p2) p2='As forças estão distribuídas de forma equilibrada, sem um traço dominante — um perfil versátil, que se adapta a diferentes contextos.';
+    var p3='';
+    if(scores.AJU<=30) p3+='O Ajustamento baixo ('+scores.AJU+') indica alguém responsivo e aberto a aprender, porém sensível ao estresse e ao feedback. ';
+    else if(scores.AJU>=70) p3+='O Ajustamento alto ('+scores.AJU+') sustenta calma e resiliência sob pressão. ';
+    if(risks.length) p3+='Sob estresse, os pontos a vigiar são '+list(risks.slice(0,3).map(function(s){return nm(s)+' ('+scores[s]+')';}))+(risks.length>3?', entre outros':'')+'.';
+    else p3+='Não há riscos de descarrilamento em zona alta — sinal de bom autocontrole sob pressão.';
+    var resumoParas=[p1,p2,p3].filter(function(x){return x;});
+
+    // ----- O que essa análise diz sobre você -----
+    var tensoes=[];
+    if((scores.ALT>=70||scores.SEN>=70)&&(scores.POD>=65||scores.COM>=65||scores.REC>=70)) tensoes.push('querer servir e agradar e, ao mesmo tempo, querer reconhecimento e protagonismo');
+    if((scores.PRU>=65||scores.SEG>=70)&&(scores.INQ>=65||scores.IMA>=70)) tensoes.push('ser prudente e avesso a risco e, ao mesmo tempo, ter mente criativa e inquieta');
+    if(scores.AJU<=35&&scores.ARR>=65) tensoes.push('ser sensível ao que pensam de você e, ao mesmo tempo, confiante nas próprias convicções');
+    if(scores.SEN>=70&&scores.AMB>=65) tensoes.push('cuidar das relações e, ao mesmo tempo, cobrar e puxar resultados');
+    var vem=themes[0].k==='relacional'?'da relação, do exemplo e da dedicação às pessoas'
+      :themes[0].k==='estrutura'?'da confiabilidade, da coerência e da consistência das entregas'
+      :themes[0].k==='resultado'?'da capacidade de entregar e de mobilizar em torno de metas'
+      :'da visão, das ideias e da clareza de raciocínio';
+    var foco=(scores.SEN>=75||risks.indexOf('PAS')>=0)?'sustentar o desconforto do conflito e do feedback sem perder o calor humano'
+      :scores.ARR>=70?'manter os ouvidos abertos ao feedback, mesmo quando confia na própria posição'
+      :risks.length?'transformar o principal risco ('+nm(risks[0])+') em consciência e autocontrole'
+      :'aprofundar suas forças e buscar contextos que as exijam plenamente';
+    var oQueDiz='Essa análise sugere que sua autoridade vem menos da imposição e mais '+vem+'. '
+      +(tensoes.length?'Você carrega tensões produtivas — '+list(tensoes)+'. Bem administradas, tornam sua liderança mais completa; mal administradas, viram os pontos de atenção acima. ':'')
+      +'O maior salto de desenvolvimento tende a estar em '+foco+'.';
+
+    var fraseCore=themes[0].k==='relacional'?'conquista pelo cuidado, pela relação e pela confiança'
+      :themes[0].k==='estrutura'?'conquista pela confiabilidade, pela consistência e pela palavra cumprida'
+      :themes[0].k==='resultado'?'conquista pela entrega, pela ambição e pelo foco em resultado'
+      :'conquista pela visão, pelas ideias e pela clareza de raciocínio';
+    var fraseRisco=risks.length?' — cujo maior desafio é '+((scores.SEN>=75||risks.indexOf('PAS')>=0)?'encarar o conflito e o feedback de frente':scores.ARR>=70?'manter os ouvidos abertos ao feedback':'gerir '+nm(risks[0]).toLowerCase()+' sob pressão'):' — com bom equilíbrio entre forças e autocontrole';
+    var frase='Um líder que '+fraseCore+fraseRisco+'.';
+
+    // ----- Pontos fortes (título + explicação) -----
     var fortes=[];
-    highHPI.forEach(function(s){fortes.push(SCALES[s].strength+' ('+nm(s)+' '+scores[s]+')');});
-    highVal.slice(0,4).forEach(function(s){fortes.push('Valoriza '+SCALES[s].name.toLowerCase()+' ('+scores[s]+') — '+SCALES[s].strength.toLowerCase());});
-    if(scores.AJU<=30) fortes.push('Humildade e abertura para aprender e receber orientação.');
-    if(!fortes.length) fortes.push('Perfil equilibrado, com forças distribuídas de forma consistente.');
+    highHPI.forEach(function(s){if(FORTE_LONG[s])fortes.push({t:FORTE_LONG[s].t+' — '+nm(s)+' '+scores[s],p:FORTE_LONG[s].p});});
+    highVal.slice(0,5).forEach(function(s){if(FORTE_LONG[s])fortes.push({t:FORTE_LONG[s].t+' — '+nm(s)+' '+scores[s],p:FORTE_LONG[s].p});});
+    if(scores.AJU<=30) fortes.push({t:'Humildade e abertura — Ajustamento '+scores.AJU,p:'Recebe orientação com facilidade e está sempre disposto a aprender; um solo fértil para desenvolvimento.'});
+    if(!fortes.length) fortes.push({t:'Perfil equilibrado',p:'Forças distribuídas de forma consistente, sem um traço dominante — versatilidade para atuar em contextos variados.'});
 
-    // Atenção
+    // ----- Pontos de atenção -----
     var atencao=[];
-    risks.forEach(function(s){atencao.push(SCALES[s].risk+' ('+nm(s)+' '+scores[s]+')');});
-    if(scores.AJU<=30) atencao.push('Sensibilidade ao estresse e ao feedback (Ajustamento '+scores.AJU+').');
-    if(!atencao.length) atencao.push('Sem pontos de atenção marcantes — mantenha a consciência dos próprios limites.');
+    risks.forEach(function(s){if(ATTN_LONG[s])atencao.push({t:ATTN_LONG[s].t+' — '+nm(s)+' '+scores[s],p:ATTN_LONG[s].p});});
+    if(scores.AJU<=30) atencao.push({t:ATTN_LONG.AJU_LOW.t+' — Ajustamento '+scores.AJU,p:ATTN_LONG.AJU_LOW.p});
+    if(scores.APR<=30 && atencao.length<5) atencao.push({t:ATTN_LONG.APR_LOW.t+' — Abordagem a Aprendizagem '+scores.APR,p:ATTN_LONG.APR_LOW.p});
+    if(!atencao.length) atencao.push({t:'Sem pontos de atenção marcantes',p:'Nenhum traço em zona de risco. Mantenha a autoconsciência e o hábito de pedir feedback para não desenvolver pontos cegos.'});
 
-    // Recomendações
+    // ----- Recomendações -----
     var recs=[];
-    risks.slice(0,5).forEach(function(s){recs.push({t:nm(s),p:SCALES[s].tip});});
-    if(scores.AJU<=30) recs.push({t:'Feedback como aliado',p:'Peça feedback ativamente e separe o dado emocional do útil antes de responder.'});
-    if(!recs.length) recs.push({t:'Consolidar forças',p:'Aprofunde seus pontos fortes e busque contextos que os exijam plenamente.'});
+    risks.slice(0,5).forEach(function(s){if(REC_LONG[s])recs.push(REC_LONG[s]);});
+    if(scores.AJU<=30) recs.push(REC_LONG.AJU);
+    if(scores.APR<=30 && recs.length<6) recs.push(REC_LONG.APR);
+    if(!recs.length) recs.push({t:'Consolidar e ampliar forças',p:'Aprofunde seus pontos fortes, assuma desafios que os exijam plenamente e busque um feedback estruturado a cada ciclo para acelerar o desenvolvimento.'});
 
-    // Insights de convergência
+    // ----- Insights de convergência -----
     var ins=[];
     if(scores.SEN>=70 && (scores.PAS>=65||scores.OBS>=65))
-      ins.push('Aversão ao conflito: alta Sensibilidade Interpessoal somada a '+(scores.PAS>=65?'Passivo-Resistente':'Obsequioso')+' indica tendência a evitar confrontos e acomodar — priorize desenvolver o confronto saudável.');
+      ins.push('Aversão ao conflito: a alta Sensibilidade Interpessoal somada a '+(scores.PAS>=65?'Passivo-Resistente':'Obsequioso')+' indica tendência a evitar confrontos e acomodar. Como nada no perfil compensa isso naturalmente, é a prioridade nº 1 — mas a boa notícia é que se resolve com prática de conversas diretas.');
     if(scores.AJU<=35 && scores.ARR>=65)
-      ins.push('Paradoxo sensibilidade × autoconfiança: você tende a sentir a crítica por dentro (Ajustamento baixo) e defender a posição por fora (Arrogante alto).');
+      ins.push('Paradoxo sensibilidade × autoconfiança: tende a sentir a crítica por dentro (Ajustamento baixo) e a defender a posição por fora (Arrogante alto). Reconhecer essa dinâmica é o que transforma feedback em desenvolvimento, em vez de defesa ou ruminação.');
     if(scores.INQ>=65 && scores.PRU>=65)
-      ins.push('Criatividade com método: alta Curiosidade/Inquisitivo com alta Prudência sugere ideias que costumam aterrissar na execução.');
+      ins.push('Criatividade com método: alta Curiosidade com alta Prudência sugere ideias que costumam aterrissar na execução — uma combinação valiosa e incomum.');
     if(scores.ALT>=70 && scores.SEG>=70)
-      ins.push('Perfil servidor e estável: vocação para servir aliada à busca por segurança favorece ambientes de cuidado, cultura e previsibilidade.');
+      ins.push('Perfil servidor e estável: a vocação para servir aliada à busca por segurança favorece ambientes de cuidado, cultura forte e previsibilidade.');
+    if(scores.ARD>=70 && scores.PRU>=65)
+      ins.push('Ousadia com freio: o gosto por risco convive com a prudência, o que tende a produzir inovação sem imprudência — cuide para o freio não virar imobilismo.');
 
-    // SWOT
-    var S=fortes.slice(0,5);
-    var W=atencao.slice(0,5);
+    // ----- SWOT (aprofundada) -----
+    var S=fortes.slice(0,6).map(function(f){return f.t.replace(/ — .*$/,'')+' — '+f.p.replace(/\.$/,'').split(';')[0];});
+    var W=atencao.slice(0,6).map(function(f){return f.t.replace(/ — .*$/,'')+' — '+f.p.replace(/\.$/,'').split(';')[0];});
     var O=[]; var T=[];
-    if(scores.SEN>=60||scores.ALT>=60){O.push('Liderança de pessoas, cultura e relacionamento');}
-    if(scores.INQ>=60||scores.CIE>=60){O.push('Papéis que unem visão estratégica e análise');}
-    if(scores.COM>=60){O.push('Posições com foco em resultado e negócio');}
-    if(scores.SEG>=60||scores.TRA>=60){O.push('Ambientes estruturados, de valores sólidos e previsíveis');}
-    if(!O.length)O.push('Contextos que aproveitem seu conjunto equilibrado de forças');
-    if(scores.SEN>=60||scores.PAS>=60){T.push('Ambientes de alto conflito ou política agressiva');}
-    if(scores.SEG>=60){T.push('Contextos de mudança caótica e alto risco');}
-    if(scores.AJU<=30){T.push('Feedback duro sem relação de confiança prévia');}
-    if(scores.REC>=70){T.push('Falta de reconhecimento pode minar a motivação');}
-    if(!T.length)T.push('Culturas frias, impessoais e puramente transacionais');
+    if(scores.SEN>=60||scores.ALT>=60) O.push('Liderar pessoas, cultura e experiência do cliente, onde o vínculo humano é diferencial');
+    if(scores.INQ>=60||scores.CIE>=60) O.push('Projetos que unam visão estratégica e análise de dados');
+    if(scores.COM>=60||scores.POD>=60) O.push('Posições de resultado e de influência no negócio');
+    if(scores.PRU>=60||scores.SEG>=60||scores.TRA>=60) O.push('Ambientes estruturados, de valores sólidos e previsíveis, onde a confiabilidade rende');
+    if(scores.AMB>=65) O.push('Trilhas de crescimento e metas desafiadoras que canalizem a ambição');
+    if(scores.SOC>=65) O.push('Papéis de porta-voz, mentoria e integração de equipes');
+    if(!O.length) O.push('Contextos que aproveitem seu conjunto equilibrado de forças');
+    if(scores.SEN>=60||scores.PAS>=60||scores.OBS>=60) T.push('Ambientes de alto conflito ou política agressiva, que exigem confronto constante');
+    if(scores.SEG>=60) T.push('Mudança caótica e decisões de alto risco sob incerteza');
+    if(scores.AJU<=30) T.push('Feedback duro e impessoal, sem relação de confiança prévia');
+    if(scores.REC>=70) T.push('Falta de reconhecimento, que tende a minar a motivação');
+    if(scores.ARR>=70) T.push('Contextos que exigem ceder e admitir erro com frequência');
+    if(!T.length) T.push('Culturas frias, impessoais e puramente transacionais');
+    var swotSintese='Forças e riscos costumam apontar para a mesma fronteira: '+foco+'. Feito isso, o ambiente que mais favorece é '+(O[0]||'aquele que exige suas forças').toLowerCase()+'.';
 
-    return {resumo:resumo,fortes:fortes,atencao:atencao,recs:recs,insights:ins,swot:{S:S,W:W,O:O,T:T}};
+    return {resumoParas:resumoParas, oQueDiz:oQueDiz, frase:frase,
+            fortes:fortes, atencao:atencao, recs:recs, insights:ins,
+            swot:{S:S,W:W,O:O,T:T}, swotSintese:swotSintese};
   }
 
   function list(arr){ if(arr.length<=1)return arr.join(''); return arr.slice(0,-1).join(', ')+' e '+arr[arr.length-1]; }
