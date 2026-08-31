@@ -66,3 +66,6 @@ git push -u origin main
 ```
 
 Depois ative o Pages como no passo B.
+
+
+Chave administrativa - mp-e8wrq5w3ti-fimn

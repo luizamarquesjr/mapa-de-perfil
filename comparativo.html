@@ -9,10 +9,14 @@
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:"Helvetica Neue",Arial,sans-serif;color:var(--ink);background:#eef1f5;line-height:1.5;}
   .wrap{max-width:1200px;margin:0 auto;padding:20px 18px 70px;}
-  .band{background:linear-gradient(125deg,#1b2836,#33475e);color:#fff;padding:22px 24px;border-radius:14px;margin-bottom:18px;}
+  .band{background:linear-gradient(125deg,#1b2836,#33475e);color:#fff;padding:22px 24px;border-radius:14px;margin-bottom:14px;}
   .band .kick{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:#9fb6d0;font-weight:700;}
   .band h1{font-size:24px;font-weight:800;margin:6px 0 4px;}
   .band .sub{font-size:12.5px;color:#c7d4e2;}
+  .controls{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+  .controls label{font-size:13px;font-weight:600;color:var(--navy);}
+  select,input.txt{padding:8px 11px;border:1px solid var(--line);border-radius:9px;font-size:13.5px;font-family:inherit;}
+  .btn{background:#1f2d3d;color:#fff;border:none;border-radius:9px;padding:9px 15px;font-size:13px;font-weight:700;cursor:pointer;}
   .card{background:#fff;border:1px solid var(--line);border-radius:13px;padding:16px 18px;margin-bottom:16px;overflow-x:auto;}
   h2{font-size:15px;color:var(--navy);margin-bottom:10px;}
   h2 .tag{font-size:10px;font-weight:800;color:#fff;padding:2px 8px;border-radius:5px;margin-left:6px;}
@@ -20,60 +24,104 @@
   th,td{padding:7px 9px;border-bottom:1px solid var(--line);font-size:12.5px;text-align:center;}
   th.scale,td.scale{text-align:left;font-weight:700;color:var(--navy);white-space:nowrap;position:sticky;left:0;background:#fff;}
   thead th{font-size:11px;color:var(--muted);border-bottom:2px solid var(--line);}
-  thead th .em{display:block;font-size:10px;color:var(--muted);font-weight:400;}
   .cell{position:relative;border-radius:6px;padding:5px 0;color:#fff;font-weight:800;}
-  .cell .track{position:absolute;inset:0;border-radius:6px;opacity:.18;}
   .cell.mid{color:#5c6675;background:#eef1f5;}
-  .cell .num{position:relative;}
   .legend{font-size:11px;color:var(--muted);margin-top:4px;}
   .toolbar{display:flex;justify-content:flex-end;margin-bottom:8px;}
-  .btn{background:#1f2d3d;color:#fff;border:none;border-radius:9px;padding:9px 15px;font-size:13px;font-weight:700;cursor:pointer;}
   .empty{padding:40px;text-align:center;color:var(--muted);}
-  @media print{body{background:#fff;}.toolbar{display:none;}}
+  @media print{body{background:#fff;}.toolbar,.controls{display:none;}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="band"><div class="kick">Painel do Aplicador</div><h1>Comparativo de Perfis</h1><div class="sub" id="sub"></div></div>
-  <div class="toolbar"><button class="btn" onclick="window.print()">Imprimir / Salvar PDF</button></div>
-  <div id="content"><div class="empty">Carregando...</div></div>
+
+  <div class="controls" id="controls" style="display:none;">
+    <label>Conjunto:</label>
+    <select id="scope">
+      <option value="__all__">Time inteiro (todos)</option>
+      <option value="Daniel">Líder: Daniel</option>
+      <option value="Gustavo">Líder: Gustavo</option>
+      <option value="Junior">Líder: Junior</option>
+      <option value="Rodolfo">Líder: Rodolfo</option>
+    </select>
+    <span id="count" class="legend"></span>
+    <span style="flex:1"></span>
+    <button class="btn" onclick="window.print()">Imprimir / Salvar PDF</button>
+  </div>
+
+  <div id="gate" class="card" style="display:none;">
+    <h2>Chave de administrador</h2>
+    <p class="legend" style="margin-bottom:10px;">Informe a chave para carregar os respondentes.</p>
+    <input class="txt" id="keyin" type="password" placeholder="Chave de administrador" style="width:280px;">
+    <button class="btn" id="enter" style="margin-left:8px;">Carregar</button>
+  </div>
+
+  <div id="content"><div class="card empty">Carregando...</div></div>
 </div>
+<script src="assets/config.js"></script>
 <script src="assets/core.js"></script>
+<script src="assets/api.js"></script>
 <script>
 (function(){
-  var H=window.HOGAN;
-  var h=location.hash.replace(/^#/,''); var recs=null;
-  try{recs=H.dec(h);}catch(e){}
-  if(!recs||!recs.length){document.getElementById('content').innerHTML='<div class="card empty">Nada para comparar. Volte ao painel, selecione 2 ou mais respondentes e clique em “Comparar selecionados”.</div>';return;}
+  var H=window.HOGAN, ALL=[], colorOf={HPI:'#F2A900',HDS:'#D6001C',MVPI:'#3F6EA5'};
+  var adminKey=sessionStorage.getItem('mp_adminKey')||'';
 
-  var scored=recs.map(function(r){return {name:r.name,scores:H.score(r.answers)};});
-  document.getElementById('sub').textContent=scored.length+' perfis comparados';
-  var colorOf={HPI:'#F2A900',HDS:'#D6001C',MVPI:'#3F6EA5'};
+  // Modo 1: hash com selecionados (do painel)
+  var hashRecs=null; var h=location.hash.replace(/^#/,'');
+  if(h){try{hashRecs=H.dec(h);}catch(e){}}
 
-  function firstName(n){return (n||'').split(' ')[0]||n;}
-  function cell(v,inv){
-    var b=H.band(v);
-    if(b==='mid') return '<td><div class="cell mid"><span class="num">'+v+'</span></div></td>';
-    var c=colorOf[inv];
-    return '<td><div class="cell" style="background:'+c+'"><span class="num">'+v+'</span></div></td>';
+  if(hashRecs&&hashRecs.length){
+    ALL=hashRecs; document.getElementById('scope').insertAdjacentHTML('afterbegin','<option value="__sel__">Selecionados ('+hashRecs.length+')</option>');
+    document.getElementById('scope').value='__sel__';
+    startUI();
+  } else if(window.API&&API.configured()){
+    if(adminKey) loadAll(); else { document.getElementById('gate').style.display='block'; document.getElementById('content').innerHTML=''; }
+  } else {
+    document.getElementById('content').innerHTML='<div class="card empty">Abra pelo painel (selecione respondentes) ou configure o backend.</div>';
   }
-  function section(title,inv,list){
+  document.getElementById('enter').onclick=function(){var k=document.getElementById('keyin').value.trim();if(!k)return;adminKey=k;sessionStorage.setItem('mp_adminKey',k);document.getElementById('gate').style.display='none';loadAll();};
+
+  function loadAll(){
+    document.getElementById('content').innerHTML='<div class="card empty">Carregando...</div>';
+    API.list(adminKey).then(function(res){
+      if(!res||!res.ok){document.getElementById('content').innerHTML='<div class="card empty">Erro: '+((res&&res.error)||'sem resposta')+'</div>';return;}
+      ALL=res.people||[]; startUI();
+    }).catch(function(){document.getElementById('content').innerHTML='<div class="card empty">Falha de conexão.</div>';});
+  }
+  function startUI(){document.getElementById('controls').style.display='flex';document.getElementById('scope').onchange=draw;draw();}
+
+  function currentSet(){
+    var v=document.getElementById('scope').value;
+    if(v==='__sel__') return hashRecs;
+    if(v==='__all__') return ALL;
+    return ALL.filter(function(p){return p.lider===v;});
+  }
+  function firstName(n){return (n||'').split(' ')[0]||n;}
+  function cell(v,inv){var b=H.band(v);if(b==='mid')return '<td><div class="cell mid">'+v+'</div></td>';return '<td><div class="cell" style="background:'+colorOf[inv]+'">'+v+'</div></td>';}
+  function section(title,inv,list,scored){
     var html='<div class="card"><h2>'+title+' <span class="tag" style="background:'+colorOf[inv]+'">'+inv+'</span></h2><table><thead><tr><th class="scale">Escala</th>';
-    scored.forEach(function(s){html+='<th>'+firstName(s.name)+'</th>';});
+    scored.forEach(function(s){html+='<th>'+esc(firstName(s.name))+'</th>';});
     html+='<th>Média</th></tr></thead><tbody>';
     list.forEach(function(sck){
-      html+='<tr><td class="scale">'+H.SCALES[sck].name+'</td>';
-      var sum=0;
+      html+='<tr><td class="scale">'+H.SCALES[sck].name+'</td>';var sum=0;
       scored.forEach(function(s){var v=s.scores[sck];sum+=v;html+=cell(v,inv);});
       var avg=Math.round(sum/scored.length);
-      html+='<td><div class="cell'+(H.band(avg)==='mid'?' mid':'')+'" style="'+(H.band(avg)!=='mid'?'background:'+colorOf[inv]:'')+'"><span class="num">'+avg+'</span></div></td>';
-      html+='</tr>';
+      html+='<td><div class="cell'+(H.band(avg)==='mid'?' mid':'')+'" style="'+(H.band(avg)!=='mid'?'background:'+colorOf[inv]:'')+'">'+avg+'</div></td></tr>';
     });
-    html+='</tbody></table><div class="legend">Cor cheia = traço marcante (fora da faixa 30–70). Cinza = média.</div></div>';
+    html+='</tbody></table><div class="legend">Cor cheia = traço marcante (fora de 30–70). Cinza = média.</div></div>';
     return html;
   }
-  var out=section('Estilo no dia a dia','HPI',H.HPI)+section('Riscos sob estresse','HDS',H.HDS)+section('Valores e motivações','MVPI',H.MVPI);
-  document.getElementById('content').innerHTML=out;
+  function esc(s){return (s||'').toString().replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});}
+  function draw(){
+    var set=currentSet()||[];
+    var lbl=document.getElementById('scope').selectedOptions[0].textContent;
+    document.getElementById('sub').textContent=lbl+' · '+set.length+' perfis';
+    document.getElementById('count').textContent=set.length+' respondente(s)';
+    if(set.length<1){document.getElementById('content').innerHTML='<div class="card empty">Nenhum respondente neste conjunto.</div>';return;}
+    var scored=set.map(function(r){return {name:r.name,scores:H.score(r.answers)};});
+    document.getElementById('content').innerHTML=section('Estilo no dia a dia','HPI',H.HPI,scored)+section('Riscos sob estresse','HDS',H.HDS,scored)+section('Valores e motivações','MVPI',H.MVPI,scored);
+  }
 })();
 </script>
 </body>

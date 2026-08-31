@@ -89,6 +89,11 @@
     <div class="card">
       <div class="toolbar" style="margin-bottom:12px;">
         <label style="font-size:13px;display:flex;align-items:center;gap:7px;"><input type="checkbox" id="selall"> Selecionar todos</label>
+        <label style="font-size:13px;display:flex;align-items:center;gap:6px;">Líder:
+          <select id="filterlider" style="padding:6px 9px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px;">
+            <option value="">Todos</option><option>Daniel</option><option>Gustavo</option><option>Junior</option><option>Rodolfo</option>
+          </select>
+        </label>
         <span class="grow"></span>
         <button class="btn ok sm" id="sendsel">✉ Enviar relatório aos selecionados</button>
       </div>
@@ -149,24 +154,30 @@
   function esc(s){return (s||'').toString().replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});}
   function fmtDate(d){if(!d)return '';try{return new Date(d).toLocaleDateString('pt-BR');}catch(e){return d;}}
 
+  function curLider(){return document.getElementById('filterlider').value;}
   function render(){
-    document.getElementById('n').textContent=people.length;
     var w=document.getElementById('tablewrap');
+    var flt=curLider();
+    var idxs=people.map(function(p,i){return i;}).filter(function(i){return !flt || people[i].lider===flt;});
+    document.getElementById('n').textContent = flt ? (idxs.length+' de '+people.length) : people.length;
     if(!people.length){w.innerHTML='<div class="empty">Nenhuma resposta ainda. Compartilhe o link do questionário.</div>';return;}
-    var h='<table><thead><tr><th></th><th>Respondente</th><th>Estilo</th><th>Valores</th><th>Riscos</th><th>Ações</th></tr></thead><tbody>';
-    people.forEach(function(p,i){
-      var sc=H.score(p.answers);
+    if(!idxs.length){w.innerHTML='<div class="empty">Nenhum respondente para o líder “'+esc(flt)+'”.</div>';return;}
+    var h='<table><thead><tr><th></th><th>Respondente</th><th>Líder</th><th>Estilo</th><th>Valores</th><th>Riscos</th><th>Ações</th></tr></thead><tbody>';
+    idxs.forEach(function(i){
+      var p=people[i], sc=H.score(p.answers);
       var hpiTop=topScales(sc,H.HPI,2,1).filter(function(s){return sc[s]>=60;});
       var valTop=topScales(sc,H.MVPI,2,1).filter(function(s){return sc[s]>=60;});
       var risks=H.HDS.filter(function(s){return sc[s]>=70;}).sort(function(a,b){return sc[b]-sc[a];}).slice(0,2);
       h+='<tr><td><input type="checkbox" class="rsel" data-i="'+i+'"></td>'
         +'<td class="who"><b>'+esc(p.name)+'</b><div class="dt">'+esc(p.email)+' · '+fmtDate(p.date)+'</div></td>'
+        +'<td>'+(p.lider?'<span class="chip" style="background:#5c4a2a">'+esc(p.lider)+'</span>':'<span class="muted">—</span>')+'</td>'
         +'<td><div class="chips">'+(chips(hpiTop,'hpi',sc)||'<span class="muted">—</span>')+'</div></td>'
         +'<td><div class="chips">'+(chips(valTop,'mvpi',sc)||'<span class="muted">—</span>')+'</div></td>'
         +'<td><div class="chips">'+(risks.length?chips(risks,'hds',sc):'<span class="muted">—</span>')+'</div></td>'
         +'<td><div class="rowacts">'
           +'<button class="btn sec sm" data-act="ans" data-i="'+i+'">Respostas</button>'
           +'<button class="btn sec sm" data-act="rep" data-i="'+i+'">Relatório</button>'
+          +'<button class="btn sec sm" data-act="mgr" data-i="'+i+'">Gerencial</button>'
           +'<button class="btn ok sm" data-act="send" data-i="'+i+'">✉ Enviar</button>'
           +'<button class="btn danger sm" data-act="del" data-i="'+i+'">Excluir</button>'
         +'</div></td></tr>';
@@ -178,6 +189,7 @@
     });
     document.getElementById('selall').checked=false;
   }
+  document.getElementById('filterlider').onchange=render;
   document.getElementById('selall').onchange=function(){
     var c=this.checked; document.querySelectorAll('.rsel').forEach(function(x){x.checked=c;});
   };
@@ -203,6 +215,7 @@
         +'<h3>Respostas — '+esc(p.name)+'</h3><div class="muted" style="margin-bottom:6px;">'+esc(p.email)+'</div>'+body);
     },
     rep:function(p){ window.open('resultado.html#'+H.enc(p),'_blank'); },
+    mgr:function(p){ window.open('relatorio-gerencial.html#'+H.enc(p),'_blank'); },
     del:function(p){
       if(!confirm('Excluir '+p.name+'? Isso remove a linha da planilha.'))return;
       API.remove(p.id,adminKey).then(function(r){if(r&&r.ok){toast('Excluído.');load();}else toast('Falha ao excluir.');});
@@ -255,7 +268,7 @@
 
   document.getElementById('compare').onclick=function(){
     var sel=selected(); if(sel.length<2){toast('Selecione 2 ou mais para comparar.');return;}
-    window.open('comparativo.html#'+H.enc(sel.map(function(p){return {name:p.name,email:p.email,date:p.date,answers:p.answers};})),'_blank');
+    window.open('comparativo.html#'+H.enc(sel.map(function(p){return {name:p.name,email:p.email,lider:p.lider,date:p.date,answers:p.answers};})),'_blank');
   };
   document.getElementById('team').onclick=function(){ window.open('resumo-time.html','_blank'); };
 

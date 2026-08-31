@@ -7,12 +7,20 @@
 
 var SHEET_NAME = 'Respostas';
 
+// Deixe vazio se o script estiver VINCULADO à planilha (Extensões → Apps Script).
+// Se for um projeto INDEPENDENTE, cole aqui o ID da planilha (parte da URL entre /d/ e /edit).
+var SHEET_ID = '';
+
+function ss_() {
+  return SHEET_ID ? SpreadsheetApp.openById(SHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
+}
+
 function getSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = ss_();
   var sh = ss.getSheetByName(SHEET_NAME);
   if (!sh) {
     sh = ss.insertSheet(SHEET_NAME);
-    sh.appendRow(['id', 'timestamp', 'nome', 'email', 'respostas_json']);
+    sh.appendRow(['id', 'timestamp', 'nome', 'email', 'lider', 'respostas_json']);
   }
   return sh;
 }
@@ -65,6 +73,7 @@ function handleSave_(body) {
     rec.date || new Date().toISOString(),
     rec.name || '',
     rec.email || '',
+    rec.lider || '',
     JSON.stringify(rec.answers)
   ]);
   return json_({ ok: true, id: id });
@@ -78,12 +87,13 @@ function handleList_() {
     var row = values[i];
     if (!row[0]) continue;
     var answers = {};
-    try { answers = JSON.parse(row[4]); } catch (e) {}
+    try { answers = JSON.parse(row[5]); } catch (e) {}
     people.push({
       id: row[0],
       date: row[1] ? new Date(row[1]).toISOString() : '',
       name: row[2],
       email: row[3],
+      lider: row[4],
       answers: answers
     });
   }

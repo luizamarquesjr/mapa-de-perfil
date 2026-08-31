@@ -56,6 +56,7 @@
 
   function esc(s){return (s||'').toString().replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});}
   function fmtDate(d){if(!d)return '';try{return new Date(d).toLocaleDateString('pt-BR');}catch(e){return d;}}
+  function list(arr){if(arr.length<=1)return arr.join('');return arr.slice(0,-1).join(', ')+' e '+arr[arr.length-1];}
 
   function barRow(sc, v, inv){
     var meta=H.SCALES[sc], b=H.band(v), invc=inv.toLowerCase();
@@ -123,5 +124,112 @@
       + REPORT_CSS + '</style></head><body><div class="rep">'+reportInnerHTML(record)+'</div></body></html>';
   }
 
-  root.REPORT = { CSS:REPORT_CSS, innerHTML:reportInnerHTML, render:render, standaloneHTML:standaloneHTML };
+  // ====================================================================
+  //  RELATÓRIO GERENCIAL (uso exclusivo do líder/administrador)
+  //  Orienta o líder sobre a melhor forma de atuar com esta pessoa.
+  // ====================================================================
+  var MGR_TIP = {
+    TEM:'ajude a antecipar gatilhos e dê espaço para a pessoa se recompor antes de decisões importantes.',
+    CET:'seja transparente com informações e o "porquê" das decisões para reduzir a desconfiança.',
+    CAU:'encoraje decisões com uma rede de segurança; reduza o medo de errar celebrando tentativas.',
+    RES:'traga a pessoa para as interações e não interprete a distância como desinteresse.',
+    PAS:'explicite os acordos por escrito e verifique a adesão real — não apenas o "sim" inicial.',
+    ARR:'corrija com dados e exemplos concretos; escolha bem as batalhas e reconheça os acertos.',
+    ARD:'valide riscos antes de aprovar; canalize a ousadia em experimentos controlados.',
+    MEL:'dê palco de forma estruturada e ajude a redistribuir o protagonismo no time.',
+    IMA:'peça o passo a passo prático das ideias antes de escalá-las.',
+    PER:'defina o nível de qualidade "suficiente" e proteja os prazos do excesso de detalhe.',
+    OBS:'incentive a pessoa a discordar; deixe claro que dizer "não" é bem-vindo.'
+  };
+  var MOTIV = {
+    REC:'Reconheça publicamente as entregas; elogie na frente do time.',
+    POD:'Ofereça autonomia e projetos com visibilidade e influência.',
+    HED:'Mantenha um clima leve e celebre as conquistas.',
+    ALT:'Conecte as tarefas ao impacto positivo em pessoas e clientes.',
+    AFI:'Favoreça o trabalho em equipe e a integração ao grupo.',
+    TRA:'Reforce propósito, valores e a coerência da empresa.',
+    SEG:'Ofereça clareza, estabilidade e previsibilidade de expectativas.',
+    COM:'Ligue as metas a resultado de negócio e a números.',
+    EST:'Valorize a qualidade e o capricho no que a pessoa entrega.',
+    CIE:'Traga dados e lógica para justificar decisões.'
+  };
+
+  function managerInnerHTML(record){
+    var sc=H.score(record.answers);
+    var hi=function(s){return sc[s]>=70;}, lo=function(s){return sc[s]<=30;};
+
+    // Motivadores
+    var motiv=H.MVPI.filter(hi).sort(function(a,b){return sc[b]-sc[a];}).map(function(s){return '<li><b>'+H.SCALES[s].name+':</b> '+MOTIV[s]+'</li>';});
+    if(!motiv.length) motiv.push('<li>Perfil de motivação equilibrado — combine reconhecimento, propósito e resultado conforme o momento.</li>');
+
+    // Comunicação e feedback
+    var com=[];
+    if(lo('AJU')) com.push('<li><b>Sensível a crítica:</b> dê feedback em privado, comece pelo reforço positivo, foque em comportamentos e combine próximos passos. Evite correções duras em público.</li>');
+    if(hi('AJU')) com.push('<li><b>Resiliente:</b> aguenta bem pressão e feedback direto e objetivo, sem rodeios.</li>');
+    if(hi('SEN')) com.push('<li><b>Preza harmonia e evita conflito:</b> crie segurança psicológica e puxe divergências à tona com cuidado — pode engolir discordâncias.</li>');
+    if(lo('SEN')) com.push('<li><b>Direto e objetivo:</b> não leva feedback para o pessoal; ajude a calibrar o tom com os colegas.</li>');
+    if(hi('ARR')) com.push('<li><b>Autoconfiança alta:</b> convença pela lógica e por dados, não pela autoridade; traga exemplos concretos ao corrigir.</li>');
+    if(hi('PAS')) com.push('<li><b>Resistência velada possível:</b> confirme combinados por escrito e acompanhe a execução de perto.</li>');
+    if(!com.length) com.push('<li>Comunicação padrão funciona bem; mantenha clareza e regularidade nos feedbacks.</li>');
+
+    // Delegar e desenvolver
+    var dev=[];
+    if(hi('PRU')) dev.push('<li><b>Confiável com processos e prazos:</b> ideal para tarefas que exigem consistência. Dê regras claras; ao inovar, apresente o novo processo.</li>');
+    if(lo('PRU')) dev.push('<li><b>Flexível e espontânea:</b> boa em ambientes ambíguos; defina checkpoints para garantir consistência.</li>');
+    if(hi('INQ')) dev.push('<li><b>Curiosa e estratégica:</b> envolva em brainstorms e visão; peça para aterrissar ideias em planos concretos.</li>');
+    if(hi('AMB')) dev.push('<li><b>Ambiciosa:</b> ofereça metas desafiadoras e um caminho claro de crescimento.</li>');
+    if(lo('AMB')) dev.push('<li><b>Jogadora de equipe:</b> incentive a assumir a frente aos poucos, com apoio.</li>');
+    if(hi('SOC')) dev.push('<li><b>Comunicativa e energizante:</b> aproveite em papéis de relacionamento e apresentações.</li>');
+    if(hi('APR')) dev.push('<li><b>Gosta de estudar:</b> ofereça treinamentos e conteúdos formais.</li>');
+    if(lo('APR')) dev.push('<li><b>Aprende na prática:</b> prefira job rotation, mentoria e "mão na massa" a cursos teóricos.</li>');
+    if(!dev.length) dev.push('<li>Desenvolva com uma mistura equilibrada de desafio, autonomia e acompanhamento.</li>');
+
+    // Riscos a gerenciar
+    var risks=H.HDS.filter(hi).sort(function(a,b){return sc[b]-sc[a];}).map(function(s){
+      return '<li><b>'+H.SCALES[s].name+' ('+sc[s]+'):</b> '+H.SCALES[s].risk+' <i>Como líder:</i> '+MGR_TIP[s]+'</li>';
+    });
+    if(!risks.length) risks.push('<li>Sem riscos de descarrilamento em zona alta — bom autocontrole sob pressão.</li>');
+
+    // Ambiente ideal
+    var amb=[];
+    if(hi('SEG')) amb.push('estável e previsível');
+    if(hi('TRA')) amb.push('com valores e propósito claros');
+    if(hi('AFI')) amb.push('colaborativo e com senso de grupo');
+    if(hi('HED')) amb.push('de clima leve');
+    if(hi('COM')) amb.push('orientado a resultado');
+    if(hi('CIE')) amb.push('baseado em dados');
+    var ambTxt = amb.length ? 'Rende mais num ambiente '+list(amb)+'.' : 'Adapta-se a diferentes ambientes de trabalho.';
+
+    // Do / Don't
+    var dos=[], donts=[];
+    if(hi('REC')) dos.push('“Excelente entrega — e quero que o time todo saiba disso.”');
+    if(hi('ALT')) dos.push('“Olha o impacto que o seu trabalho teve para [cliente/colega].”');
+    if(hi('COM')) dos.push('“Sua entrega moveu [meta/número] — parabéns pelo resultado.”');
+    if(!dos.length) dos.push('Reconheça esforços específicos e conecte-os ao propósito do time.');
+    if(lo('AJU')) donts.push('Corrigir de forma dura ou em público (“de novo isso errado?”).');
+    if(hi('SEN')) donts.push('Forçar um confronto aberto sem preparar o terreno.');
+    if(hi('ARR')) donts.push('Apelar só para a hierarquia (“porque eu mandei”) sem argumentos.');
+    if(!donts.length) donts.push('Feedback vago ou tardio — prefira específico e no momento.');
+
+    var lider = record.lider ? ' · Líder: '+esc(record.lider) : '';
+
+    return ''
+      + '<div class="band" style="background:linear-gradient(125deg,#3a2f1b,#5c4a2a);"><div class="kick">Relatório gerencial · Confidencial (uso do líder)</div>'
+        + '<h1>'+esc(record.name||'Respondente')+'</h1>'
+        + '<div class="who">Como liderar melhor esta pessoa'+lider+'</div></div>'
+      + '<div class="disc"><b>Documento de gestão — não compartilhar com o avaliado.</b> Orientações para o líder direto atuar melhor com esta pessoa, a partir do seu perfil. Ferramenta educativa; não é o Hogan Assessment.</div>'
+      + '<div class="card"><h2>✔ Como liderar &amp; motivar</h2><ul class="clean pos">'+motiv.join('')+'</ul>'
+        + '<p style="font-size:12.5px;color:var(--muted);margin-top:10px;">'+ambTxt+'</p></div>'
+      + '<div class="card"><h2>💬 Como comunicar e dar feedback</h2><ul class="clean" style="list-style:none;">'+com.join('')+'</ul></div>'
+      + '<div class="card"><h2>🎯 Como delegar e desenvolver</h2><ul class="clean" style="list-style:none;">'+dev.join('')+'</ul></div>'
+      + '<div class="card"><h2>⚠ Riscos a gerenciar (sinais sob estresse)</h2><ul class="clean neg">'+risks.join('')+'</ul></div>'
+      + '<div class="card"><h2>Frases que funcionam × o que evitar</h2><div class="two">'
+        + '<div class="kard pos"><h3>Use</h3><ul class="clean pos">'+dos.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></div>'
+        + '<div class="kard neg"><h3>Evite</h3><ul class="clean neg">'+donts.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></div>'
+      + '</div></div>';
+  }
+  function renderManager(container, record){ ensureCSS(); container.classList.add('rep'); container.innerHTML=managerInnerHTML(record); }
+
+  root.REPORT = { CSS:REPORT_CSS, innerHTML:reportInnerHTML, render:render, standaloneHTML:standaloneHTML,
+                  managerInnerHTML:managerInnerHTML, renderManager:renderManager };
 })(window);

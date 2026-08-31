@@ -19,8 +19,9 @@
   .disc b{color:#5a4a1e;}
   .field{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px;}
   .field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px;}
-  .field input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-size:14px;font-family:inherit;}
-  .field input:focus{outline:none;border-color:var(--acc);}
+  .field input,.field select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-size:14px;font-family:inherit;background:#fff;}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--acc);}
+  .field select{cursor:pointer;}
   .q{background:#fff;border:1px solid var(--line);border-radius:12px;padding:15px 18px;margin-top:12px;}
   .q.miss{border-color:#e0b4b4;background:#fdf6f6;}
   .q .qt{font-size:14.5px;font-weight:600;color:var(--ink);margin-bottom:11px;}
@@ -63,6 +64,18 @@
     <div class="field">
       <div><label>Nome completo *</label><input id="nome" placeholder="Seu nome"></div>
       <div><label>E-mail * (para receber seu relatório)</label><input id="email" type="email" placeholder="voce@email.com"></div>
+    </div>
+    <div class="field" style="margin-top:14px;">
+      <div><label>Líder direto *</label>
+        <select id="lider">
+          <option value="">Selecione seu líder...</option>
+          <option value="Daniel">Daniel</option>
+          <option value="Gustavo">Gustavo</option>
+          <option value="Junior">Junior</option>
+          <option value="Rodolfo">Rodolfo</option>
+        </select>
+      </div>
+      <div></div>
     </div>
     <div class="disc"><b>Sobre este teste:</b> ferramenta educativa <b>inspirada</b> no modelo de três dimensões (estilo do dia a dia, riscos sob estresse e valores). <b>Não</b> é o Hogan Assessment, não utiliza suas perguntas e as pontuações são referenciadas na própria escala — não são percentis clínicos ou normatizados. Suas respostas serão enviadas ao aplicador, que preparará seu relatório.</div>
   </div>
@@ -117,9 +130,11 @@
     var btn=this, warn=document.getElementById('warn');
     var nome=document.getElementById('nome').value.trim();
     var email=document.getElementById('email').value.trim();
+    var lider=document.getElementById('lider').value;
     var missing=items.filter(function(it){return answers[it.id]==null;});
     if(!nome){warn.textContent='Preencha seu nome.';document.getElementById('nome').focus();return;}
     if(!validEmail(email)){warn.textContent='Informe um e-mail válido.';document.getElementById('email').focus();return;}
+    if(!lider){warn.textContent='Selecione seu líder direto.';document.getElementById('lider').focus();return;}
     if(missing.length){
       warn.textContent='Faltam '+missing.length+' resposta(s).';
       missing.forEach(function(it){document.getElementById('q_'+it.id).classList.add('miss');});
@@ -127,7 +142,7 @@
       return;
     }
     warn.textContent=''; btn.disabled=true; btn.textContent='Enviando...';
-    record={v:H.VERSION,name:nome,email:email,date:new Date().toISOString(),answers:answers};
+    record={v:H.VERSION,name:nome,email:email,lider:lider,date:new Date().toISOString(),answers:answers};
 
     function showDone(withFallback){
       document.getElementById('form').style.display='none';
