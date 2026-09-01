@@ -50,7 +50,7 @@
   .ans .sc{font-size:10px;color:var(--muted);}
   /* toast */
   #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:80;display:none;box-shadow:0 6px 20px rgba(0,0,0,.25);}
-  #offscreen{position:fixed;left:-99999px;top:0;width:800px;background:#fff;}
+  #offscreen{position:fixed;left:-99999px;top:0;width:760px;background:#fff;}
   .warnbox{background:#fff8e8;border:1px solid #f0e2bf;border-radius:10px;padding:11px 14px;font-size:12px;color:#6b5a2a;margin-top:12px;}
 </style>
 </head>
@@ -230,9 +230,9 @@
     holder.innerHTML=''; var box=document.createElement('div'); holder.appendChild(box);
     REPORT.render(box, record);
     var opt={margin:[8,8,10,8],image:{type:'jpeg',quality:0.96},
-      html2canvas:{scale:2,backgroundColor:'#ffffff',useCORS:true,windowWidth:820},
+      html2canvas:{scale:2,backgroundColor:'#ffffff',useCORS:true},
       jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
-      pagebreak:{mode:['css','legacy'],avoid:['.card','.kard','.qd','.rec','.insight']}};
+      pagebreak:{mode:['css','legacy'],avoid:['.card','.kard','.qd','.rec','.insight','.band','.sbar']}};
     return html2pdf().set(opt).from(box).toPdf().get('pdf').then(function(pdf){
       var uri=pdf.output('datauristring');
       return uri.substring(uri.indexOf(',')+1);

@@ -12,12 +12,13 @@
   .loader{background:#fff;border:1px solid #e4e8ee;border-radius:13px;padding:22px;}
   .drop{border:2px dashed #c4ccd6;border-radius:12px;padding:24px;text-align:center;cursor:pointer;color:#5c6675;}
   textarea{width:100%;height:60px;border:1px solid #e4e8ee;border-radius:9px;padding:9px;font-family:ui-monospace,Menlo,monospace;font-size:11px;margin-top:8px;}
-  @media print{body{background:#fff;}.toolbar{display:none;}}
+  html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  @media print{body{background:#fff;}.toolbar{display:none !important;}}
 </style>
 </head>
 <body>
 <div class="page">
-  <div class="toolbar" id="toolbar" style="display:none;"><button class="btn" onclick="window.print()">Imprimir / Salvar PDF</button></div>
+  <div class="toolbar" id="toolbar" style="display:none;"><button class="btn" id="dlbtn" onclick="downloadPDF()">⬇ Baixar PDF</button><button class="btn" style="background:#fff;color:#5c4a2a;border:1.5px solid #e4e8ee;" onclick="window.print()">Imprimir</button></div>
   <div id="report"></div>
   <div class="loader" id="loader" style="display:none;">
     <h2 style="font-size:16px;color:#1f2d3d;margin-bottom:10px;">Carregar respostas</h2>
@@ -29,10 +30,27 @@
 </div>
 <script src="assets/core.js"></script>
 <script src="assets/report.js"></script>
+<script src="assets/html2pdf.bundle.min.js"></script>
 <script>
 (function(){
-  var H=window.HOGAN;
-  function show(rec){REPORT.renderManager(document.getElementById('report'),rec);document.getElementById('toolbar').style.display='flex';document.getElementById('loader').style.display='none';document.title='Gerencial — '+(rec.name||'Perfil');window.scrollTo(0,0);}
+  var H=window.HOGAN, cur=null;
+  function slug(s){return (s||'perfil').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-|-$/g,'').toLowerCase();}
+  window.downloadPDF=function(){
+    if(!cur) return;
+    var btn=document.getElementById('dlbtn'), old=btn.textContent;
+    btn.textContent='Gerando PDF...'; btn.disabled=true;
+    var holder=document.createElement('div');
+    holder.style.cssText='position:fixed;left:-99999px;top:0;width:760px;background:#fff;';
+    var inner=document.createElement('div'); holder.appendChild(inner); document.body.appendChild(holder);
+    REPORT.renderManager(inner, cur);
+    function done(){ if(holder.parentNode) document.body.removeChild(holder); btn.textContent=old; btn.disabled=false; }
+    var opt={margin:[8,8,10,8],image:{type:'jpeg',quality:0.97},
+      html2canvas:{scale:2,backgroundColor:'#ffffff',useCORS:true},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+      pagebreak:{mode:['css','legacy'],avoid:['.card','.kard','.qd','.rec','.insight','.band','.sbar']}};
+    html2pdf().set(opt).from(inner).save('Gerencial_'+slug(cur.name)+'.pdf').then(done).catch(done);
+  };
+  function show(rec){cur=rec;REPORT.renderManager(document.getElementById('report'),rec);document.getElementById('toolbar').style.display='flex';document.getElementById('loader').style.display='none';document.title='Gerencial — '+(rec.name||'Perfil');window.scrollTo(0,0);}
   function tryHash(){var h=location.hash.replace(/^#/,'');if(h){try{show(H.dec(h));return true;}catch(e){}}return false;}
   if(!tryHash()){
     document.getElementById('loader').style.display='block';
