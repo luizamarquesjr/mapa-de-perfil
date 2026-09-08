@@ -135,14 +135,33 @@
       +(riscos.length?'Atenção de gestão para '+riscos.slice(0,2).map(function(s){return H.SCALES[s].name;}).join(' e ')+', presentes em zona alta em parte do grupo. ':'Nenhum risco coletivo em zona alta. ')
       +'Maior diversidade de perfil em '+spread.map(function(x){return H.SCALES[x.s].name+' ('+x.d+' pts)';}).join(', ')+'.';
 
+    // Distribuição por perfil (arquétipo) + pares semelhantes/diferentes
+    function escn(x){return (x||'').toString().replace(/[<>&]/g,function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});}
+    var archeList=['Relacional','Estruturado','Resultado','Estratégico'], arche={};
+    archeList.forEach(function(k){arche[k]=0;});
+    all.forEach(function(sc){ arche[H.archetype(sc).label]++; });
+    var domArche=archeList.slice().sort(function(a,b){return arche[b]-arche[a];})[0];
+    var archeHTML=archeList.map(function(k){var pv=N?Math.round(arche[k]/N*100):0;return '<div class="kpi"><div class="v">'+arche[k]+'</div><div class="l">'+k+' · '+pv+'%</div></div>';}).join('');
+    var riscoZonaHTML=riscos.length?riscos.map(function(s){return '<li><b>'+H.SCALES[s].name+'</b> — '+hi[s]+' de '+N+' pessoa(s) em zona alta</li>';}).join(''):'<li>Nenhum risco em zona alta no time.</li>';
+    var pairSim=null,pairDif=null;
+    if(N>=2){ for(var pi=0;pi<N;pi++)for(var pj=pi+1;pj<N;pj++){ var pd=H.distance(all[pi],all[pj]); if(!pairSim||pd<pairSim.d)pairSim={i:pi,j:pj,d:pd}; if(!pairDif||pd>pairDif.d)pairDif={i:pi,j:pj,d:pd}; } }
+    function simPct(d){return Math.max(0,Math.min(100,Math.round(100-d)));}
+    var simHTML = N<2 ? '<p class="lead" style="font-size:13.5px;color:var(--muted);">É necessário ao menos 2 respondentes neste conjunto para comparar perfis.</p>'
+      : '<div class="two"><div class="kard pos"><h3>Mais semelhantes</h3><p class="lead" style="font-size:14px;"><b>'+escn(people[pairSim.i].name)+'</b> ↔ <b>'+escn(people[pairSim.j].name)+'</b><br><span style="color:var(--muted);font-size:13px;">'+simPct(pairSim.d)+'% de semelhança de perfil</span></p></div>'
+        +'<div class="kard neg"><h3>Mais diferentes</h3><p class="lead" style="font-size:14px;"><b>'+escn(people[pairDif.i].name)+'</b> ↔ <b>'+escn(people[pairDif.j].name)+'</b><br><span style="color:var(--muted);font-size:13px;">'+simPct(pairDif.d)+'% de semelhança de perfil</span></p></div></div>';
+
     document.getElementById('content').innerHTML=
       '<div class="card"><div class="kpis">'
         +'<div class="kpi"><div class="v">'+N+'</div><div class="l">respondentes</div></div>'
+        +'<div class="kpi"><div class="v" style="font-size:20px;line-height:1.6;">'+domArche+'</div><div class="l">perfil predominante</div></div>'
         +'<div class="kpi"><div class="v">'+forcas.length+'</div><div class="l">forças coletivas (méd ≥ 65)</div></div>'
         +'<div class="kpi"><div class="v">'+riscos.length+'</div><div class="l">riscos com alguém em zona alta</div></div>'
-        +'<div class="kpi"><div class="v">'+spread[0].d+'</div><div class="l">maior amplitude (pts)</div></div>'
       +'</div></div>'
       +'<div class="card"><h2>Leitura do time</h2><p class="lead">'+resumo+'</p></div>'
+      +'<div class="card"><h2>Distribuição por perfil</h2>'
+        +'<div class="kpis">'+archeHTML+'</div>'
+        +'<h3 style="margin-top:16px;font-size:14px;color:var(--navy);">Pessoas por risco em zona alta (&gt; 70)</h3><ul class="clean neg" style="margin-top:6px;">'+riscoZonaHTML+'</ul></div>'
+      +'<div class="card"><h2>Perfis semelhantes e diferentes</h2>'+simHTML+'</div>'
       +'<div class="card"><h2>Estilo médio do time <span class="tag" style="background:var(--hpi)">HPI</span></h2>'+bars(H.HPI,'HPI')+'</div>'
       +'<div class="card"><h2>Riscos médios do time <span class="tag" style="background:var(--hds)">HDS</span></h2>'+bars(H.HDS,'HDS')+'</div>'
       +'<div class="card"><h2>Valores médios do time <span class="tag" style="background:var(--mvpi)">MVPI</span></h2>'+bars(H.MVPI,'MVPI')+'</div>'

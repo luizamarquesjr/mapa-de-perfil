@@ -461,6 +461,19 @@
 
   function list(arr){ if(arr.length<=1)return arr.join(''); return arr.slice(0,-1).join(', ')+' e '+arr[arr.length-1]; }
 
+  // Arquétipo dominante (perfil) a partir das notas
+  function archetype(scores){
+    function av(a){var s=0,n=0;a.forEach(function(x){if(scores[x]!=null){s+=scores[x];n++;}});return n?s/n:0;}
+    var t=[{k:'relacional',label:'Relacional',v:av(['SEN','ALT','AFI','SOC'])},
+           {k:'estrutura',label:'Estruturado',v:av(['PRU','TRA','SEG'])},
+           {k:'resultado',label:'Resultado',v:av(['AMB','POD','COM','REC'])},
+           {k:'estrategico',label:'Estratégico',v:av(['INQ','CIE','IMA'])}];
+    t.sort(function(a,b){return b.v-a.v;});
+    return t[0];
+  }
+  // Distância (0..100) entre dois perfis, média das diferenças absolutas por escala
+  function distance(a,b){ var s=0,n=0; ORDER.forEach(function(k){ if(a[k]!=null&&b[k]!=null){ s+=Math.abs(a[k]-b[k]); n++; } }); return n?s/n:0; }
+
   // ---- Codificação para transporte (unicode-safe base64) ---------------
   function enc(obj){ return btoa(unescape(encodeURIComponent(JSON.stringify(obj)))); }
   function dec(s){ return JSON.parse(decodeURIComponent(escape(atob(s)))); }
@@ -469,6 +482,7 @@
     C:C, SCALES:SCALES, ITEMS:ITEMS, ORDER:ORDER,
     HPI:HPI_ORDER, HDS:HDS_ORDER, MVPI:MVPI_ORDER,
     shuffledItems:shuffledItems, score:score, band:band, analyze:analyze,
+    archetype:archetype, distance:distance,
     enc:enc, dec:dec,
     LIKERT:['Discordo totalmente','Discordo','Neutro','Concordo','Concordo totalmente'],
     VERSION:1

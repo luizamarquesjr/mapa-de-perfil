@@ -74,6 +74,42 @@
   </div></header>
 
   <div class="wrap">
+    <style>
+      #rostercard .radd{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0 12px;padding:11px 13px;background:var(--soft);border-radius:10px;}
+      #rostercard .radd input,#rostercard .radd select{padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px;}
+      #rostercard input.rq{padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px;}
+      #rostertable{width:100%;border-collapse:collapse;}
+      #rostertable th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;border-bottom:2px solid var(--line);}
+      #rostertable td{padding:8px 10px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle;}
+      #rostertable tr:hover td{background:#fafbfc;}
+      .rchk{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#e2f2ea;color:var(--ok);font-weight:800;font-size:13px;}
+      .rmiss{color:#c4ccd6;font-size:15px;}
+      .rlbl{font-size:11px;font-weight:700;color:#fff;padding:2px 8px;border-radius:20px;background:#5c4a2a;}
+      .rmutedcell{color:var(--muted);}
+    </style>
+    <div class="card" id="rostercard">
+      <div class="toolbar" style="align-items:center;">
+        <b style="font-size:15px;color:var(--navy);">Lista do time (SP)</b>
+        <span class="count" style="margin-left:4px;"><span id="rdone">0</span>/<span id="rtot">0</span> responderam</span>
+        <span class="grow"></span>
+        <label style="font-size:13px;display:flex;align-items:center;gap:6px;">Líder:
+          <select id="rfilter" style="padding:6px 9px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px;">
+            <option value="">Todos</option><option>Daniel</option><option>Gustavo</option><option>Junior</option><option>Rodolfo</option><option>Outros</option><option value="__nr__">Só não respondeu</option>
+          </select>
+        </label>
+        <input class="rq" id="rsearch" placeholder="Buscar nome…" style="width:160px;">
+        <button class="btn sec sm" id="rreset" title="Restaurar a lista SP original">Restaurar lista SP</button>
+      </div>
+      <div class="radd">
+        <span style="font-size:12px;font-weight:700;color:var(--muted);">Adicionar:</span>
+        <input id="raNome" placeholder="Nome" style="min-width:200px;">
+        <input id="raEmail" placeholder="E-mail (opcional)" style="min-width:220px;">
+        <select id="raLider"><option value="">Líder…</option><option>Daniel</option><option>Gustavo</option><option>Junior</option><option>Rodolfo</option><option>Outros</option></select>
+        <button class="btn sm" id="raBtn">+ Adicionar</button>
+      </div>
+      <div style="overflow-x:auto;"><div id="rosterwrap"></div></div>
+      <div class="muted" id="rnote" style="margin-top:8px;"></div>
+    </div>
     <div class="card">
       <div class="toolbar">
         <button class="btn sec sm" id="refresh">↻ Atualizar</button>
@@ -154,8 +190,85 @@
   function esc(s){return (s||'').toString().replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});}
   function fmtDate(d){if(!d)return '';try{return new Date(d).toLocaleDateString('pt-BR');}catch(e){return d;}}
 
+  /* ===== Lista do time (roster editável, cruzado com respondentes) ===== */
+  var SEED_ROSTER=[
+    {name:"Fernando Cavalcante",email:"fernando.cavalcante@valorinvestimentos.com"},
+    {name:"Kauan Ramos",email:"kauan.ramos@valorinvestimentos.com"},
+    {name:"Matheus Carvalho",email:"matheus.carvalho@valorinvestimentos.com"},
+    {name:"Victor Moreira",email:"victor.moreira@valorinvestimentos.com"},
+    {name:"Aline Cunha"},{name:"Andrea de Aguiar Dias Saraiva Gomes"},{name:"Bernardo Cascão Bougleux Couto"},
+    {name:"Carlos Augusto Ribeiro Lima"},{name:"Cristiane Gomes Pereira"},{name:"Daniel Augusto Magalhães"},
+    {name:"Daniel Teles"},{name:"Danilo Souza"},{name:"Darlington Bernardes"},{name:"Diego Moura de Souza"},
+    {name:"Fabio Barbosa"},{name:"Francisco Avilar"},{name:"Giancarlo Sidoti"},{name:"Gustavo Mendonça"},
+    {name:"Higor Rabelo da Silva"},{name:"João Victor Musso"},{name:"Keone Kojin"},{name:"Leonardo Casini Lucas"},
+    {name:"Luis Gustavo Rodrigues"},{name:"Luiz Antonio Marques Junior"},{name:"Marcelo Moura"},
+    {name:"Pedro Henrique Carneiro Gonçalves"},{name:"Rafael Cataldo da Costa Souza"},{name:"Ramon Coser"},
+    {name:"Ramon Magno Uehara"},{name:"Rodolfo Carneiro"},{name:"Thiago Valencia"},
+    {name:"Tiago Damasceno de Barros Morgado"},{name:"Vivian Busch"},{name:"Wesley Feitosa"}
+  ];
+  var RKEY='mp_roster_v1';
+  function seedCopy(){return SEED_ROSTER.map(function(x){return {name:x.name,email:x.email||'',lider:''};});}
+  var roster; try{var _r=localStorage.getItem(RKEY);roster=_r?JSON.parse(_r):seedCopy();}catch(e){roster=seedCopy();}
+  function saveRoster(){try{localStorage.setItem(RKEY,JSON.stringify(roster));}catch(e){}}
+  function rnorm(s){return (s||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9@. ]/g,' ').replace(/\s+/g,' ').trim();}
+  var RSTOP={de:1,da:1,do:1,dos:1,das:1,e:1};
+  function rtoks(s){return rnorm(s).split(' ').filter(function(t){return t.length>=2&&!RSTOP[t];});}
+  function rsubset(a,b){for(var i=0;i<a.length;i++){if(b.indexOf(a[i])<0)return false;}return true;}
+  function matchResp(entry){
+    var em=rnorm(entry.email);
+    if(em){for(var i=0;i<people.length;i++){if(rnorm(people[i].email)===em)return people[i];}}
+    var et=rtoks(entry.name); if(!et.length)return null;
+    for(var j=0;j<people.length;j++){var pt=rtoks(people[j].name); if(!pt.length)continue;
+      var sm=et.length<=pt.length?et:pt, bg=et.length<=pt.length?pt:et;
+      if(sm.length>=1&&rsubset(sm,bg))return people[j];
+    } return null;
+  }
+  function renderRoster(){
+    var flt=document.getElementById('rfilter').value, q=rnorm(document.getElementById('rsearch').value);
+    var rows=[],done=0,totShown=0,matchedIds={};
+    roster.forEach(function(e,i){
+      var m=matchResp(e);
+      var lider=e.lider||(m&&m.lider)||'';
+      var email=e.email||(m&&m.email)||'';
+      var name=e.name||(m&&m.name)||'';
+      if(m) matchedIds[m.id]=1;
+      if(flt==='__nr__'){ if(m) return; } else if(flt){ if(lider!==flt) return; }
+      if(q && rnorm(name).indexOf(q)<0 && rnorm(email).indexOf(q)<0) return;
+      totShown++; if(m) done++;
+      var acts='';
+      if(m) acts+='<button class="btn sec sm" data-rrep="'+i+'">Rel.</button><button class="btn sec sm" data-rger="'+i+'">Ger.</button>';
+      acts+='<button class="btn danger sm" data-rdel="'+i+'" title="Remover">×</button>';
+      rows.push('<tr><td><b>'+esc(name)+'</b></td>'
+        +'<td>'+(lider?'<span class="rlbl">'+esc(lider)+'</span>':'<span class="rmiss">—</span>')+'</td>'
+        +'<td class="rmutedcell">'+(email?esc(email):'—')+'</td>'
+        +'<td>'+(m?'<span class="rchk">✓</span>':'<span class="rmiss">—</span>')+'</td>'
+        +'<td><div class="rowacts">'+acts+'</div></td></tr>');
+    });
+    document.getElementById('rdone').textContent=done;
+    document.getElementById('rtot').textContent=totShown;
+    document.getElementById('rosterwrap').innerHTML='<table id="rostertable"><thead><tr><th>Nome</th><th>Líder</th><th>E-mail</th><th>Respondido</th><th></th></tr></thead><tbody>'+(rows.join('')||'<tr><td colspan="5" class="empty">Nenhum nome nesta visão.</td></tr>')+'</tbody></table>';
+    var fora=people.filter(function(p){return !matchedIds[p.id];}).length;
+    document.getElementById('rnote').textContent=fora?(fora+' respondente(s) ainda não vinculado(s) à lista — veja na tabela de respondentes abaixo (use “Adicionar” para incluí-los na lista).'):'';
+    var w=document.getElementById('rosterwrap');
+    w.querySelectorAll('button[data-rdel]').forEach(function(b){b.onclick=function(){if(confirm('Remover '+roster[+b.dataset.rdel].name+' da lista?')){roster.splice(+b.dataset.rdel,1);saveRoster();renderRoster();}};});
+    w.querySelectorAll('button[data-rrep]').forEach(function(b){b.onclick=function(){var m=matchResp(roster[+b.dataset.rrep]);if(m)window.open('resultado.html#'+H.enc(m),'_blank');};});
+    w.querySelectorAll('button[data-rger]').forEach(function(b){b.onclick=function(){var m=matchResp(roster[+b.dataset.rger]);if(m)window.open('relatorio-gerencial.html#'+H.enc(m),'_blank');};});
+  }
+  document.getElementById('rfilter').onchange=renderRoster;
+  document.getElementById('rsearch').oninput=renderRoster;
+  document.getElementById('raBtn').onclick=function(){
+    var nm=document.getElementById('raNome').value.trim(); if(!nm){toast('Informe o nome.');return;}
+    roster.push({name:nm,email:document.getElementById('raEmail').value.trim(),lider:document.getElementById('raLider').value});
+    saveRoster();
+    document.getElementById('raNome').value='';document.getElementById('raEmail').value='';document.getElementById('raLider').value='';
+    renderRoster();
+  };
+  document.getElementById('rreset').onclick=function(){if(confirm('Restaurar a lista SP original? Isso descarta adições/edições manuais.')){roster=seedCopy();saveRoster();renderRoster();}};
+  renderRoster();
+
   function curLider(){return document.getElementById('filterlider').value;}
   function render(){
+    try{renderRoster();}catch(e){}
     var w=document.getElementById('tablewrap');
     var flt=curLider();
     var idxs=people.map(function(p,i){return i;}).filter(function(i){return !flt || people[i].lider===flt;});
