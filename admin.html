@@ -131,6 +131,8 @@
           </select>
         </label>
         <span class="grow"></span>
+        <button class="btn sec sm" id="dlsel">⬇ Baixar relatórios</button>
+        <button class="btn sec sm" id="dlgersel">⬇ Baixar gerenciais</button>
         <button class="btn ok sm" id="sendsel">✉ Enviar relatório aos selecionados</button>
       </div>
       <div id="tablewrap"><div class="empty">Carregando...</div></div>
@@ -378,6 +380,31 @@
       sendOne(p).then(function(){ok++;}).catch(function(){fail++;}).then(next);
     })();
   };
+
+  function saveReportPDF(rec, mode){
+    var holder=document.getElementById('offscreen'); holder.innerHTML='';
+    var box=document.createElement('div'); box.style.width='760px'; holder.appendChild(box);
+    if(mode==='mgr') REPORT.renderManager(box, rec); else REPORT.render(box, rec);
+    var fn=(mode==='mgr'?'Gerencial_':'Relatorio_')+slug(rec.name)+'.pdf';
+    var opt={margin:[8,8,10,8],image:{type:'jpeg',quality:0.96},
+      html2canvas:{scale:2,backgroundColor:'#ffffff',useCORS:true},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+      pagebreak:{mode:['css','legacy'],avoid:['.card','.kard','.qd','.rec','.insight','.band','.sbar']}};
+    return html2pdf().set(opt).from(box).save(fn).then(function(){holder.innerHTML='';});
+  }
+  function downloadBatch(records, mode){
+    if(!records.length){toast('Selecione ao menos um respondente.');return;}
+    var b1=document.getElementById('dlsel'), b2=document.getElementById('dlgersel');
+    b1.disabled=true; b2.disabled=true;
+    var i=0, ok=0, fail=0;
+    (function next(){
+      if(i>=records.length){ b1.disabled=false; b2.disabled=false; toast('Concluído: '+ok+' arquivo(s) baixado(s)'+(fail?' · '+fail+' falha(s)':'')+'.',4500); return; }
+      var rec=records[i++]; toast('Baixando '+i+'/'+records.length+' — '+rec.name+'…',60000);
+      saveReportPDF(rec, mode).then(function(){ok++;}).catch(function(){fail++;}).then(function(){ setTimeout(next, 500); });
+    })();
+  }
+  document.getElementById('dlsel').onclick=function(){downloadBatch(selected(),'ind');};
+  document.getElementById('dlgersel').onclick=function(){downloadBatch(selected(),'mgr');};
 
   document.getElementById('compare').onclick=function(){
     var sel=selected(); if(sel.length<2){toast('Selecione 2 ou mais para comparar.');return;}
