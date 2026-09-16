@@ -50,7 +50,7 @@
     REPORT.render(inner, cur);
     function done(){ if(holder.parentNode) document.body.removeChild(holder); btn.textContent=old; btn.disabled=false; }
     var opt={margin:[8,8,10,8],image:{type:'jpeg',quality:0.97},
-      html2canvas:{scale:2,backgroundColor:'#ffffff',useCORS:true},
+      html2canvas:{scale:2,backgroundColor:'#ffffff',useCORS:true,scrollX:0,scrollY:0},
       jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
       pagebreak:{mode:['css','legacy'],avoid:['.card','.kard','.qd','.rec','.insight','.band','.sbar']}};
     html2pdf().set(opt).from(inner).save('Relatorio_'+slug(cur.name)+'.pdf').then(done).catch(done);

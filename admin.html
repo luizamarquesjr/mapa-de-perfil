@@ -345,7 +345,7 @@
     holder.innerHTML=''; var box=document.createElement('div'); holder.appendChild(box);
     REPORT.render(box, record);
     var opt={margin:[8,8,10,8],image:{type:'jpeg',quality:0.96},
-      html2canvas:{scale:2,backgroundColor:'#ffffff',useCORS:true},
+      html2canvas:{scale:2,backgroundColor:'#ffffff',useCORS:true,scrollX:0,scrollY:0},
       jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
       pagebreak:{mode:['css','legacy'],avoid:['.card','.kard','.qd','.rec','.insight','.band','.sbar']}};
     return html2pdf().set(opt).from(box).toPdf().get('pdf').then(function(pdf){
@@ -387,7 +387,7 @@
     if(mode==='mgr') REPORT.renderManager(box, rec); else REPORT.render(box, rec);
     var fn=(mode==='mgr'?'Gerencial_':'Relatorio_')+slug(rec.name)+'.pdf';
     var opt={margin:[8,8,10,8],image:{type:'jpeg',quality:0.96},
-      html2canvas:{scale:2,backgroundColor:'#ffffff',useCORS:true},
+      html2canvas:{scale:2,backgroundColor:'#ffffff',useCORS:true,scrollX:0,scrollY:0},
       jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
       pagebreak:{mode:['css','legacy'],avoid:['.card','.kard','.qd','.rec','.insight','.band','.sbar']}};
     return html2pdf().set(opt).from(box).save(fn).then(function(){holder.innerHTML='';});
