@@ -80,6 +80,9 @@
   .badge{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:20px;}
   .badge.keep{background:#e3f0e9;color:var(--s);}
   .badge.move{background:#fbeee0;color:#9a5b17;}
+  .stars{color:var(--gold);letter-spacing:1.5px;font-size:12px;}
+  .allocwrap{margin-top:8px;}
+  .allochd{margin:18px 0 4px;border-top:2px solid var(--line);padding-top:14px;font-size:15px;color:var(--navy);}
   .note{font-size:12px;color:var(--muted);margin-top:9px;line-height:1.55;}
   .hierpick{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
   .hierpick .row{display:flex;align-items:center;gap:8px;font-size:12.5px;}
@@ -433,38 +436,99 @@
       out+='<p class="note">Maior sintonia de Rodolfo com <b>'+escn(gf[0].l.name)+'</b> ('+gf[0].f.overall+'%); menor com <b>'+escn(gf[gf.length-1].l.name)+'</b> ('+gf[gf.length-1].f.overall+'%). Valores/Estilo/Riscos são as três dimensões (0–100, quanto maior mais parecidos).</p>';
     }
 
-    // 2b) Assessores → melhor líder
+    // 2b) Assessores → melhor líder (com estrelas)
     var leaderIds={}; ROLES.forEach(function(r){if(hierMap[r.key]!=null)leaderIds[hierMap[r.key]]=true;});
     var assessores=people.filter(function(p){return !leaderIds[p.__i];});
-    out+='<h3 style="margin:18px 0 4px">Demais assessores → líder de maior aderência</h3>';
-    out+='<p class="lead" style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Para cada assessor (respeitando o filtro), a aderência de perfil com Daniel, Junior e Gustavo. O líder recomendado é o de maior aderência — considere junto com o desempenho e o contexto de cada um.</p>';
+    var maxL=lids.length;
+    function starStr(n){var s='';for(var i=0;i<maxL;i++)s+=(i<n?'★':'☆');return s;}
+    out+='<h3 style="margin:18px 0 4px">Demais assessores → aderência por líder (estrelas)</h3>';
+    out+='<p class="lead" style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Para cada assessor (respeitando o filtro), a aderência com '+lids.map(function(l){return escn(l.name.split(' ')[0]);}).join(', ')+'. <span class="stars">★★★</span> = líder mais aderente · <span class="stars">★★☆</span> = 2º · <span class="stars">★☆☆</span> = menos aderente.</p>';
     if(!assessores.length){ out+='<div class="warn">Nenhum assessor no conjunto filtrado (apenas líderes/gestor). Marque mais líderes no filtro.</div></div>'; return out; }
 
-    var keepCnt=0, moveCnt=0;
-    var cards=assessores.map(function(p){
+    var AF=assessores.map(function(p){
       var prof=SC[p.__i];
       var fits=lids.map(function(l){return {l:l,f:fit(prof,l.prof)};}).sort(function(a,b){return b.f.overall-a.f.overall;});
-      var best=fits[0];
-      var cur=p.lider||'Outros';
-      var already = LIDER_KEYS.some(function(k){return norm(k)===norm(cur);}) && norm(cur)===norm(best.l.key);
-      if(already) keepCnt++; else if(LIDER_KEYS.some(function(k){return norm(k)===norm(cur);})) moveCnt++;
-      var maxv=fits[0].f.overall||1;
-      var rows=LIDER_KEYS.map(function(k){
-        var r=fits.filter(function(x){return x.l.key===k;})[0]; if(!r) return '';
+      fits.forEach(function(x,i){x.stars=maxL-i;});
+      return {p:p,fits:fits,cur:p.lider||'Outros'};
+    });
+    function adher(o,key){var r=o.fits.filter(function(x){return x.l.key===key;})[0];return r?r.f.overall:0;}
+    function starsFor(o,key){var r=o.fits.filter(function(x){return x.l.key===key;})[0];return r?r.stars:0;}
+    function curIsLid(o){return lids.some(function(l){return norm(l.key)===norm(o.cur);});}
+
+    var keepCnt=0, moveCnt=0;
+    var cards=AF.map(function(o){
+      var p=o.p, fits=o.fits, best=fits[0], cur=o.cur;
+      var already = curIsLid(o) && norm(cur)===norm(best.l.key);
+      if(already) keepCnt++; else if(curIsLid(o)) moveCnt++;
+      var maxv=best.f.overall||1;
+      var rows=fits.map(function(r){
         var isBest=(r.l.key===best.l.key);
-        return '<div class="fitrow'+(isBest?' best':'')+'"><div class="nm">'+escn(r.l.name)+(isBest?' ★':'')+'</div>'
-          +'<div class="fbar"><div class="ff" style="width:'+Math.round(r.f.overall/ (maxv||1) *100)+'%"></div></div>'
+        return '<div class="fitrow'+(isBest?' best':'')+'"><div class="nm">'+escn(r.l.name)+' <span class="stars">'+starStr(r.stars)+'</span></div>'
+          +'<div class="fbar"><div class="ff" style="width:'+Math.round(r.f.overall/maxv*100)+'%"></div></div>'
           +'<div class="pc">'+r.f.overall+'%</div></div>';
       }).join('');
-      var badge = LIDER_KEYS.some(function(k){return norm(k)===norm(cur);})
-        ? (already?'<span class="badge keep">já é o mais aderente</span>':'<span class="badge move">sugestão: '+escn(best.l.name)+'</span>')
-        : '<span class="badge move">sugestão: '+escn(best.l.name)+'</span>';
+      var badge = curIsLid(o)
+        ? (already?'<span class="badge keep">já é o ★★★</span>':'<span class="badge move">★★★: '+escn(best.l.name)+'</span>')
+        : '<span class="badge move">★★★: '+escn(best.l.name)+'</span>';
       return '<div class="fitc"><div class="hd"><div class="who">'+escn(p.name)+'</div><div class="cur">líder atual: <b>'+escn(cur)+'</b> '+badge+'</div></div>'
         +rows+'<p class="note">'+fitRationale(best.f,best.l.name)+'</p></div>';
     }).join('');
+    var resumo='<p class="note" style="margin:0 0 12px"><b>'+keepCnt+'</b> assessor(es) já estão com o líder ★★★; <b>'+moveCnt+'</b> (dentro do trio) teriam maior aderência com outro líder.</p>';
 
-    var resumo='<p class="note" style="margin:0 0 12px"><b>'+keepCnt+'</b> assessor(es) já estão com o líder de maior aderência; <b>'+moveCnt+'</b> teriam maior aderência com outro líder do trio.</p>';
-    return out+resumo+cards+'</div>';
+    // ---- Propostas de divisão ----
+    function emptyBuckets(){var b={};lids.forEach(function(l){b[l.key]=[];});return b;}
+
+    // Proposta A: menos alterações — mantém quem já está com líder do trio; realoca o resto pelo ★★★
+    var a1=emptyBuckets();
+    AF.forEach(function(o){
+      if(curIsLid(o)){ var lk=lids.filter(function(l){return norm(l.key)===norm(o.cur);})[0].key; a1[lk].push(o); }
+      else { a1[o.fits[0].l.key].push(o); }
+    });
+
+    // Proposta B: carga equilibrada — cota ~N/nºlíderes, priorizando maior aderência
+    var a2=emptyBuckets();
+    var N=AF.length, base=Math.floor(N/maxL), extraLeft=N-base*maxL;
+    var count={}; lids.forEach(function(l){count[l.key]=0;});
+    var assigned={}, triples=[];
+    AF.forEach(function(o){o.fits.forEach(function(r){triples.push({o:o,key:r.l.key,s:r.f.overall});});});
+    triples.sort(function(a,b){return b.s-a.s;});
+    triples.forEach(function(t){
+      if(assigned[t.o.p.__i]) return;
+      if(count[t.key]<base){ a2[t.key].push(t.o); count[t.key]++; assigned[t.o.p.__i]=1; }
+      else if(count[t.key]===base && extraLeft>0){ a2[t.key].push(t.o); count[t.key]++; extraLeft--; assigned[t.o.p.__i]=1; }
+    });
+    AF.forEach(function(o){ // fallback p/ eventuais não alocados
+      if(assigned[o.p.__i]) return;
+      var opts=o.fits, k=null,i;
+      for(i=0;i<opts.length;i++){ if(count[opts[i].l.key]<base){k=opts[i].l.key;break;} }
+      if(k===null){ for(i=0;i<opts.length;i++){ if(count[opts[i].l.key]===base&&extraLeft>0){k=opts[i].l.key;extraLeft--;break;} } }
+      if(k===null){ k=lids.slice().sort(function(a,b){return count[a.key]-count[b.key];})[0].key; }
+      a2[k].push(o); count[k]++; assigned[o.p.__i]=1;
+    });
+
+    function renderAlloc(title, sub, buckets){
+      var counts=lids.map(function(l){return buckets[l.key].length;});
+      var mn=Math.min.apply(null,counts), mx=Math.max.apply(null,counts);
+      var q={}, changes=0, adherSum=0, tot=0; q[maxL]=0;q[maxL-1]=0;q[maxL-2]=0;
+      lids.forEach(function(l){ buckets[l.key].forEach(function(o){ var st=starsFor(o,l.key); q[st]=(q[st]||0)+1; adherSum+=adher(o,l.key); tot++; if(norm(o.cur)!==norm(l.key))changes++; }); });
+      var cols=lids.map(function(l){
+        var list=buckets[l.key].slice().sort(function(a,b){return adher(b,l.key)-adher(a,l.key);});
+        var items=list.map(function(o){var st=starsFor(o,l.key);var chg=norm(o.cur)!==norm(l.key);
+          return '<li><b>'+escn(o.p.name)+'</b> <span class="stars">'+starStr(st)+'</span> <span style="color:var(--muted)">'+adher(o,l.key)+'%</span>'+(chg?' <span class="badge move" style="font-size:9px;padding:1px 6px">de '+escn(o.cur)+'</span>':'')+'</li>';
+        }).join('')||'<li style="color:var(--muted)">—</li>';
+        return '<div class="kard"><h3>'+escn(l.name)+' <span style="color:var(--muted);font-weight:600">('+buckets[l.key].length+')</span></h3><ul class="clean">'+items+'</ul></div>';
+      }).join('');
+      var qs=(q[maxL]||0)+'×★★★, '+(q[maxL-1]||0)+'×★★☆, '+(q[maxL-2]||0)+'×★☆☆';
+      var sum='<p class="note"><b>'+changes+'</b> mudança(s) vs. líder atual · equilíbrio '+mn+'–'+mx+' por líder · aderência média '+(tot?Math.round(adherSum/tot):0)+'% · '+qs+'.</p>';
+      return '<div class="allocwrap"><h3 class="allochd">'+title+'</h3><p class="lead" style="font-size:12.5px;color:var(--muted);margin-bottom:4px">'+sub+'</p>'+sum+'<div class="three">'+cols+'</div></div>';
+    }
+
+    var allocs='<h3 class="allochd">Propostas de divisão dos assessores</h3>'
+      +'<p class="lead" style="font-size:12.5px;color:var(--muted)">Duas formas de dividir os assessores filtrados entre '+lids.map(function(l){return escn(l.name.split(' ')[0]);}).join(', ')+'. As estrelas ao lado de cada nome indicam a aderência daquele assessor ao líder onde foi alocado.</p>'
+      +renderAlloc('Proposta A · menos alterações','Mantém quem já está com um líder do trio; realoca só quem está fora do trio para o líder de maior aderência (★★★).',a1)
+      +renderAlloc('Proposta B · carga equilibrada','Distribui o mais igualmente possível (~'+base+'–'+(base+(N%maxL?1:0))+' por líder), priorizando a maior aderência dentro de cada cota — para ninguém ficar sobrecarregado.',a2);
+
+    return out+resumo+cards+allocs+'</div>';
   }
 
   // ---------- Bloco 3: painel de estatísticas / gráficos ----------
