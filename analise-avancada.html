@@ -204,10 +204,18 @@
   function loadHier(){ try{return JSON.parse(localStorage.getItem(HKEY))||{};}catch(e){return {};} }
   function saveHier(){ try{localStorage.setItem(HKEY,JSON.stringify(hierMap));}catch(e){} }
   var NAME_SUFFIX=['junior','jr','filho','neto','sobrinho','segundo','terceiro'];
+  // Aliases explícitos: líder cujo "nome" não é o primeiro nome do registro.
+  var ROLE_ALIAS={ 'Junior':'Luiz Antonio Marques Junior' };
   function autoPick(key){
-    var k=norm(key);
+    var k=norm(key), m;
+    // 0) alias explícito (ex.: líder "Junior" = Luiz Antonio Marques Junior)
+    if(ROLE_ALIAS[key]){
+      var an=norm(ROLE_ALIAS[key]);
+      m=ALL.filter(function(p){return norm(p.name)===an;});
+      if(m.length) return m[0].__i;
+    }
     // 1) primeiro nome bate exatamente (evita casar líder com sobrenome de outra pessoa)
-    var m=ALL.filter(function(p){return firstTok(p.name)===k;});
+    m=ALL.filter(function(p){return firstTok(p.name)===k;});
     if(m.length) return m[0].__i;
     // 2) se a chave é um sufixo de nome comum (Junior, Filho...), NÃO identificar por sobrenome — deixar para escolha manual
     if(NAME_SUFFIX.indexOf(k)>=0) return null;
