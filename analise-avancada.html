@@ -203,12 +203,15 @@
   var hierMap={}; // roleKey -> respondent __i (or null)
   function loadHier(){ try{return JSON.parse(localStorage.getItem(HKEY))||{};}catch(e){return {};} }
   function saveHier(){ try{localStorage.setItem(HKEY,JSON.stringify(hierMap));}catch(e){} }
+  var NAME_SUFFIX=['junior','jr','filho','neto','sobrinho','segundo','terceiro'];
   function autoPick(key){
     var k=norm(key);
-    // 1) primeiro nome bate exatamente (evita casar "Junior" com sobrenome de outra pessoa)
+    // 1) primeiro nome bate exatamente (evita casar líder com sobrenome de outra pessoa)
     var m=ALL.filter(function(p){return firstTok(p.name)===k;});
     if(m.length) return m[0].__i;
-    // 2) algum token bate (fallback)
+    // 2) se a chave é um sufixo de nome comum (Junior, Filho...), NÃO identificar por sobrenome — deixar para escolha manual
+    if(NAME_SUFFIX.indexOf(k)>=0) return null;
+    // 3) fallback: algum token do nome bate (para nomes do meio legítimos)
     m=ALL.filter(function(p){return norm(p.name).split(/\s+/).indexOf(k)>=0;});
     if(m.length) return m[0].__i;
     return null;
