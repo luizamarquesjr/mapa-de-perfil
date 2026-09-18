@@ -117,6 +117,7 @@
         <span class="grow"></span>
         <button class="btn sec sm" id="compare">Comparar selecionados</button>
         <button class="btn sec sm" id="team">Resumo do time</button>
+        <button class="btn sec sm" id="adv">📊 Análise avançada</button>
         <button class="btn sec sm" id="csv">⬇ CSV</button>
         <button class="btn sm" id="logout">Sair</button>
       </div>
@@ -411,6 +412,7 @@
     window.open('comparativo.html#'+H.enc(sel.map(function(p){return {name:p.name,email:p.email,lider:p.lider,date:p.date,answers:p.answers};})),'_blank');
   };
   document.getElementById('team').onclick=function(){ window.open('resumo-time.html','_blank'); };
+  document.getElementById('adv').onclick=function(){ window.open('analise-avancada.html','_blank'); };
 
   document.getElementById('csv').onclick=function(){
     if(!people.length){toast('Nada para exportar.');return;}

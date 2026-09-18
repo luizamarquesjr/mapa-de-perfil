@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Análise Avançada do Time</title>
+<style>
+  :root{--ink:#1c2430;--muted:#5c6675;--line:#e4e8ee;--soft:#f5f7f9;--navy:#1f2d3d;--gold:#b8860b;--acc:#3F6EA5;
+    --hpi:#F2A900;--hds:#D6001C;--mvpi:#3F6EA5;--s:#2e7d5b;--w:#b5462f;--lowc:#b5462f;--midc:#9aa6b4;--highc:#2c5f8a;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Helvetica Neue",Arial,sans-serif;color:var(--ink);background:#eef1f5;line-height:1.5;}
+  .wrap{max-width:1000px;margin:0 auto;padding:20px 18px 80px;}
+  .band{background:linear-gradient(125deg,#1b2836,#33475e);color:#fff;padding:24px 26px;border-radius:14px;margin-bottom:18px;}
+  .band .kick{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:#9fb6d0;font-weight:700;}
+  .band h1{font-size:25px;font-weight:800;margin:6px 0 4px;}
+  .band .sub{font-size:13px;color:#c7d4e2;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:13px;padding:18px 22px;margin-bottom:16px;}
+  h2{font-size:16px;color:var(--navy);margin-bottom:12px;padding-bottom:7px;border-bottom:2px solid var(--line);display:flex;align-items:center;flex-wrap:wrap;gap:8px;}
+  h2 .tag{font-size:10px;font-weight:800;color:#fff;padding:2px 8px;border-radius:5px;}
+  h3{font-size:14px;color:var(--navy);}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  .kpi{background:var(--soft);border-radius:11px;padding:14px;text-align:center;}
+  .kpi .v{font-size:24px;font-weight:800;color:var(--navy);}
+  .kpi .l{font-size:11px;color:var(--muted);margin-top:2px;}
+  .sbar{display:grid;grid-template-columns:180px 1fr 96px;align-items:center;gap:10px;margin:5px 0;}
+  .sbar .lab{font-size:12.5px;font-weight:600;text-align:right;}
+  .track{position:relative;height:15px;background:#eef1f5;border-radius:8px;overflow:hidden;}
+  .fill{position:absolute;left:0;top:0;bottom:0;border-radius:8px;}
+  .fill.hpi{background:var(--hpi);}.fill.hds{background:var(--hds);}.fill.mvpi{background:var(--mvpi);}
+  .zone{position:absolute;top:0;bottom:0;width:1px;background:rgba(0,0,0,.16);}
+  .sbar .val{font-size:12px;font-weight:800;color:var(--navy);}
+  .sbar .val small{color:var(--muted);font-weight:600;}
+  .lead{font-size:14px;line-height:1.6;}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .three{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .kard{border:1px solid var(--line);border-radius:11px;padding:14px 17px;}
+  .kard.pos{border-top:4px solid var(--s);}.kard.neg{border-top:4px solid var(--w);}
+  .kard h3{margin-bottom:8px;}.kard.pos h3{color:var(--s);}.kard.neg h3{color:var(--w);}
+  ul.clean{list-style:none;}ul.clean li{position:relative;padding:5px 0 5px 16px;font-size:12.5px;border-bottom:1px solid var(--soft);}
+  ul.clean li:last-child{border-bottom:none;}ul.clean li:before{content:"";position:absolute;left:2px;top:10px;width:6px;height:6px;border-radius:50%;}
+  ul.pos li:before{background:var(--s);}ul.neg li:before{background:var(--w);}ul.neu li:before{background:var(--acc);}
+  /* filtro multi-seleção */
+  .controls{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin-bottom:16px;position:sticky;top:8px;z-index:20;box-shadow:0 2px 10px rgba(20,30,45,.05);}
+  .controls .ttl{font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;}
+  .chks{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .chk{display:inline-flex;align-items:center;gap:6px;background:var(--soft);border:1.5px solid var(--line);border-radius:20px;padding:6px 13px;font-size:13px;font-weight:600;cursor:pointer;user-select:none;}
+  .chk input{accent-color:var(--acc);width:15px;height:15px;cursor:pointer;}
+  .chk.on{background:#eaf1f8;border-color:var(--acc);color:var(--navy);}
+  .chk.master{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .chk.master input{accent-color:#fff;}
+  .cnt{font-size:12px;color:var(--muted);margin-left:auto;}
+  /* segmented distribution bar */
+  .seg{display:grid;grid-template-columns:180px 1fr 96px;align-items:center;gap:10px;margin:5px 0;}
+  .seg .lab{font-size:12.5px;font-weight:600;text-align:right;}
+  .segbar{display:flex;height:16px;border-radius:8px;overflow:hidden;background:#eef1f5;font-size:9px;font-weight:800;color:#fff;line-height:16px;}
+  .segbar .lo{background:var(--lowc);}.segbar .mi{background:var(--midc);}.segbar .hi{background:var(--highc);}
+  .seg .val{font-size:11px;color:var(--muted);font-weight:700;text-align:right;}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin-bottom:8px;}
+  .legend span b{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:middle;}
+  .chip{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;margin:2px 3px 2px 0;}
+  .chip.lo{background:#f6e4df;color:#8f3320;}.chip.hi{background:#dfeaf5;color:#204d73;}
+  .tbl{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .tbl th,.tbl td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;}
+  .tbl th{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:700;background:var(--soft);}
+  .tbl td.num{text-align:center;font-weight:700;}
+  .mini{position:relative;height:13px;background:#eef1f5;border-radius:7px;overflow:hidden;min-width:64px;}
+  .mini .mf{position:absolute;left:0;top:0;bottom:0;border-radius:7px;background:var(--acc);}
+  /* fit cards */
+  .fitc{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px;}
+  .fitc .hd{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+  .fitc .who{font-size:15px;font-weight:800;color:var(--navy);}
+  .fitc .cur{font-size:11.5px;color:var(--muted);}
+  .fitrow{display:grid;grid-template-columns:110px 1fr 52px;align-items:center;gap:9px;margin:4px 0;font-size:12.5px;}
+  .fitrow .nm{font-weight:600;}
+  .fitrow.best .nm{color:var(--s);}
+  .fbar{position:relative;height:14px;background:#eef1f5;border-radius:7px;overflow:hidden;}
+  .fbar .ff{position:absolute;left:0;top:0;bottom:0;border-radius:7px;background:var(--midc);}
+  .fitrow.best .fbar .ff{background:var(--s);}
+  .fitrow .pc{font-weight:800;text-align:right;}
+  .badge{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:20px;}
+  .badge.keep{background:#e3f0e9;color:var(--s);}
+  .badge.move{background:#fbeee0;color:#9a5b17;}
+  .note{font-size:12px;color:var(--muted);margin-top:9px;line-height:1.55;}
+  .hierpick{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  .hierpick .row{display:flex;align-items:center;gap:8px;font-size:12.5px;}
+  .hierpick label{width:120px;font-weight:700;color:var(--navy);}
+  .hierpick select{flex:1;padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:12.5px;font-family:inherit;background:#fff;}
+  .warn{background:#fff6e6;border:1px solid #f0d9a8;border-radius:9px;padding:10px 13px;font-size:12.5px;color:#8a6412;margin-top:8px;}
+  .btn{background:var(--navy);color:#fff;border:none;border-radius:9px;padding:9px 15px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+  .btn.sec{background:#fff;color:var(--navy);border:1.5px solid var(--line);}
+  input.txt{padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-size:14px;width:100%;}
+  .toolbar{display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;}
+  .empty{padding:36px;text-align:center;color:var(--muted);}
+  .foot{font-size:11.5px;color:var(--muted);line-height:1.6;}
+  .collapse-h{cursor:pointer;user-select:none;}
+  .collapse-h .arw{font-size:11px;color:var(--muted);}
+  svg text{font-family:"Helvetica Neue",Arial,sans-serif;}
+  @media print{body{background:#fff;}.toolbar,.controls{position:static;box-shadow:none;}.controls{display:none;}}
+  @media(max-width:640px){.kpis{grid-template-columns:repeat(2,1fr);}.two,.three,.hierpick{grid-template-columns:1fr;}
+    .sbar,.seg{grid-template-columns:118px 1fr 84px;}.wrap{padding:16px 12px 60px;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="band">
+    <div class="kick">Painel do Aplicador</div>
+    <h1>Análise Avançada do Time</h1>
+    <div class="sub" id="sub">Médias e extremos · aderência de líderes · estatísticas · plano de gestão personalizado</div>
+  </div>
+
+  <div id="gate" class="card" style="display:none;">
+    <h2>Chave de administrador</h2>
+    <p class="lead" style="margin-bottom:10px;">Informe a chave para carregar os dados do time.</p>
+    <input class="txt" id="keyin" type="password" placeholder="Chave de administrador" style="margin-bottom:10px;">
+    <button class="btn" id="enter">Carregar</button>
+  </div>
+
+  <div class="controls" id="controls" style="display:none;">
+    <div class="ttl">Filtrar por líder (seleção múltipla)</div>
+    <div class="chks" id="chks"></div>
+  </div>
+
+  <div id="content"><div class="card empty">Carregando...</div></div>
+
+  <div class="card" id="foot" style="display:none;">
+    <p class="foot"><b>Como ler.</b> Escala 0–100, referenciada na própria amostra (não é percentil normatizado do Hogan). <b>Extremos:</b> abaixo de 30 (baixo) ou acima de 70 (alto); entre 30 e 70 é média. <b>Aderência</b> = semelhança de perfil entre duas pessoas (100% = perfis idênticos), calculada pela diferença média nas 28 escalas. Aderência alta favorece sintonia e comunicação; alguma diferença pode ser complementar. Quando líder e liderado pontuam alto no mesmo risco (HDS), isso é sinalizado como ponto de atenção. Ferramenta educativa de apoio à decisão — não substitui a leitura qualitativa de cada perfil.</p>
+  </div>
+</div>
+
+<script src="assets/config.js"></script>
+<script src="assets/core.js"></script>
+<script src="assets/api.js"></script>
+<script>
+(function(){
+  var H=window.HOGAN, adminKey=sessionStorage.getItem('mp_adminKey')||'';
+  var LIDERES=['Daniel','Elidio','Gustavo','Junior','Rodolfo','Outros'];
+  // Hierarquia desta análise
+  var GESTOR_KEY='Rodolfo';
+  var LIDER_KEYS=['Daniel','Junior','Gustavo'];
+  var ROLES=[{key:'Rodolfo',role:'Gestor'},{key:'Daniel',role:'Líder'},{key:'Junior',role:'Líder'},{key:'Gustavo',role:'Líder'}];
+  var HKEY='mp_hier_v1';
+
+  function escn(x){return (x||'').toString().replace(/[<>&]/g,function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});}
+  function norm(s){return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();}
+  function firstTok(s){return norm(s).split(/\s+/)[0]||'';}
+  function pct(part,tot){return tot?Math.round(part/tot*100):0;}
+
+  if(!adminKey){document.getElementById('gate').style.display='block';document.getElementById('content').innerHTML='';}
+  else load();
+  document.getElementById('enter').onclick=function(){var k=document.getElementById('keyin').value.trim();if(!k)return;adminKey=k;sessionStorage.setItem('mp_adminKey',k);document.getElementById('gate').style.display='none';document.getElementById('content').innerHTML='<div class="card empty">Carregando...</div>';load();};
+
+  var ALL=[], SC={}, selected={};
+
+  function load(){
+    if(!(window.API&&API.configured())){document.getElementById('content').innerHTML='<div class="card empty">Backend não configurado (assets/config.js).</div>';return;}
+    API.list(adminKey).then(function(res){
+      if(!res||!res.ok){document.getElementById('content').innerHTML='<div class="card empty">Erro: '+((res&&res.error)||'sem resposta')+'</div>';return;}
+      ALL=(res.people||[]).map(function(p,i){p.__i=i;return p;});
+      ALL.forEach(function(p){SC[p.__i]=H.score(p.answers);});
+      setupFilter(); setupHier(); document.getElementById('foot').style.display='block'; draw();
+    }).catch(function(){document.getElementById('content').innerHTML='<div class="card empty">Falha de conexão.</div>';});
+  }
+
+  // ---------- Filtro multi-seleção ----------
+  function present(){ // líderes que têm ao menos 1 respondente
+    var s={}; ALL.forEach(function(p){s[p.lider||'Outros']=true;}); return s;
+  }
+  function setupFilter(){
+    var pr=present();
+    LIDERES.forEach(function(l){ if(selected[l]===undefined) selected[l]=true; });
+    var box=document.getElementById('chks');
+    var html='<label class="chk master" id="chk_all"><input type="checkbox" id="cb_all"><span>Todos</span></label>';
+    LIDERES.forEach(function(l){
+      var n=ALL.filter(function(p){return (p.lider||'Outros')===l;}).length;
+      var dis=n?'':' style="opacity:.4"';
+      html+='<label class="chk" data-l="'+l+'"'+dis+'><input type="checkbox" data-l="'+l+'"'+(n?'':' disabled')+'><span>'+l+' <span style="color:var(--muted);font-weight:600">('+n+')</span></span></label>';
+    });
+    html+='<span class="cnt" id="cnt"></span>';
+    box.innerHTML=html;
+    box.querySelectorAll('input[data-l]').forEach(function(cb){
+      cb.checked=selected[cb.getAttribute('data-l')];
+      cb.onchange=function(){selected[this.getAttribute('data-l')]=this.checked;syncFilterUI();draw();};
+    });
+    document.getElementById('cb_all').onclick=function(){
+      var on=this.checked;
+      box.querySelectorAll('input[data-l]').forEach(function(cb){if(!cb.disabled){cb.checked=on;selected[cb.getAttribute('data-l')]=on;}});
+      syncFilterUI();draw();
+    };
+    document.getElementById('controls').style.display='block';
+    syncFilterUI();
+  }
+  function syncFilterUI(){
+    var box=document.getElementById('chks');
+    var chosen=0,total=0;
+    box.querySelectorAll('input[data-l]').forEach(function(cb){if(!cb.disabled){total++;if(cb.checked)chosen++;cb.closest('.chk').classList.toggle('on',cb.checked);}});
+    document.getElementById('cb_all').checked=(chosen===total&&total>0);
+    var set=filtered();
+    document.getElementById('cnt').textContent=set.length+' de '+ALL.length+' respondente(s)';
+  }
+  function filtered(){ return ALL.filter(function(p){return selected[p.lider||'Outros'];}); }
+
+  // ---------- Identificação da hierarquia ----------
+  var hierMap={}; // roleKey -> respondent __i (or null)
+  function loadHier(){ try{return JSON.parse(localStorage.getItem(HKEY))||{};}catch(e){return {};} }
+  function saveHier(){ try{localStorage.setItem(HKEY,JSON.stringify(hierMap));}catch(e){} }
+  function autoPick(key){
+    var k=norm(key);
+    // 1) primeiro nome bate exatamente (evita casar "Junior" com sobrenome de outra pessoa)
+    var m=ALL.filter(function(p){return firstTok(p.name)===k;});
+    if(m.length) return m[0].__i;
+    // 2) algum token bate (fallback)
+    m=ALL.filter(function(p){return norm(p.name).split(/\s+/).indexOf(k)>=0;});
+    if(m.length) return m[0].__i;
+    return null;
+  }
+  function setupHier(){
+    var saved=loadHier();
+    ROLES.forEach(function(r){
+      var id = (saved[r.key]!=null && ALL.some(function(p){return p.__i===saved[r.key];})) ? saved[r.key] : autoPick(r.key);
+      hierMap[r.key]=id;
+    });
+    saveHier();
+  }
+  function hierProfile(key){ var i=hierMap[key]; return (i!=null)?SC[i]:null; }
+  function hierName(key){ var i=hierMap[key]; return (i!=null)?ALL[i].name:null; }
+  function isHierLeader(p){ return ROLES.some(function(r){return hierMap[r.key]===p.__i;}); }
+
+  // ---------- Métricas de aderência ----------
+  function subdist(a,b,keys){var s=0,n=0;keys.forEach(function(k){if(a[k]!=null&&b[k]!=null){s+=Math.abs(a[k]-b[k]);n++;}});return n?s/n:0;}
+  function fit(a,b){
+    return {
+      overall:Math.round(100-H.distance(a,b)),
+      val:Math.round(100-subdist(a,b,H.MVPI)),
+      est:Math.round(100-subdist(a,b,H.HPI)),
+      ris:Math.round(100-subdist(a,b,H.HDS)),
+      sharedRisk:H.HDS.filter(function(k){return a[k]>70&&b[k]>70;})
+    };
+  }
+  function fitRationale(f,leaderName){
+    var dims=[{v:f.val,l:'valores (o que motiva)'},{v:f.est,l:'estilo de trabalho'},{v:f.ris,l:'reações sob estresse'}];
+    var best=dims.slice().sort(function(x,y){return y.v-x.v;})[0];
+    var worst=dims.slice().sort(function(x,y){return x.v-y.v;})[0];
+    var t='Maior aderência com <b>'+escn(leaderName)+'</b> ('+f.overall+'%): mais alinhados em '+best.l+' ('+best.v+'%)';
+    if(best.v-worst.v>=12) t+=', com maior divergência em '+worst.l+' ('+worst.v+'%)';
+    t+='.';
+    if(f.sharedRisk.length) t+=' <b style="color:var(--w)">Atenção:</b> ambos pontuam alto em '+f.sharedRisk.map(function(k){return H.SCALES[k].name;}).join(', ')+' — risco a gerir na relação.';
+    return t;
+  }
+
+  // ---------- Bandas (regra do usuário: <30 baixo, >70 alto) ----------
+  function bandX(v){ return v<30?'lo':(v>70?'hi':'mi'); }
+
+  // ---------- Charts (SVG) ----------
+  function radar(vals,labels,size,color){
+    var cx=size/2, cy=size/2, r=size/2-30, n=vals.length, i, out='';
+    var rings=[25,50,75,100];
+    rings.forEach(function(rv){
+      var pts=[];
+      for(i=0;i<n;i++){var a=-Math.PI/2+i*2*Math.PI/n; pts.push((cx+r*rv/100*Math.cos(a)).toFixed(1)+','+(cy+r*rv/100*Math.sin(a)).toFixed(1));}
+      out+='<polygon points="'+pts.join(' ')+'" fill="none" stroke="#e4e8ee" stroke-width="1"/>';
+    });
+    for(i=0;i<n;i++){var a=-Math.PI/2+i*2*Math.PI/n; out+='<line x1="'+cx+'" y1="'+cy+'" x2="'+(cx+r*Math.cos(a)).toFixed(1)+'" y2="'+(cy+r*Math.sin(a)).toFixed(1)+'" stroke="#e4e8ee" stroke-width="1"/>';}
+    var pp=[];
+    for(i=0;i<n;i++){var a=-Math.PI/2+i*2*Math.PI/n, rr=r*Math.max(0,Math.min(100,vals[i]))/100; pp.push((cx+rr*Math.cos(a)).toFixed(1)+','+(cy+rr*Math.sin(a)).toFixed(1));}
+    out+='<polygon points="'+pp.join(' ')+'" fill="'+color+'33" stroke="'+color+'" stroke-width="2.5"/>';
+    for(i=0;i<n;i++){var a=-Math.PI/2+i*2*Math.PI/n, rr=r*Math.max(0,Math.min(100,vals[i]))/100; out+='<circle cx="'+(cx+rr*Math.cos(a)).toFixed(1)+'" cy="'+(cy+rr*Math.sin(a)).toFixed(1)+'" r="3.2" fill="'+color+'"/>';}
+    for(i=0;i<n;i++){var a=-Math.PI/2+i*2*Math.PI/n, lx=cx+(r+16)*Math.cos(a), ly=cy+(r+16)*Math.sin(a);
+      var anc=Math.abs(Math.cos(a))<0.3?'middle':(Math.cos(a)>0?'start':'end');
+      out+='<text x="'+lx.toFixed(1)+'" y="'+(ly+4).toFixed(1)+'" text-anchor="'+anc+'" font-size="11" font-weight="700" fill="#1f2d3d">'+labels[i]+'</text>';
+      out+='<text x="'+lx.toFixed(1)+'" y="'+(ly+17).toFixed(1)+'" text-anchor="'+anc+'" font-size="10" fill="#5c6675">'+Math.round(vals[i])+'</text>';
+    }
+    return '<svg viewBox="0 0 '+size+' '+size+'" width="'+size+'" height="'+size+'">'+out+'</svg>';
+  }
+
+  // Vetor de arquétipo (4 eixos) de um conjunto de scores
+  function archVec(scores){
+    function av(a){var s=0,n=0;a.forEach(function(x){if(scores[x]!=null){s+=scores[x];n++;}});return n?s/n:0;}
+    return [av(['SEN','ALT','AFI','SOC']),av(['PRU','TRA','SEG']),av(['AMB','POD','COM','REC']),av(['INQ','CIE','IMA'])];
+  }
+
+  // ====================================================================
+  function draw(){
+    var people=filtered();
+    var host=document.getElementById('content');
+    if(!ALL.length){host.innerHTML='<div class="card empty">Nenhum respondente ainda.</div>';return;}
+    if(!people.length){host.innerHTML='<div class="card empty">Nenhum líder selecionado — marque ao menos um no filtro acima.</div>';return;}
+
+    var html='';
+    html+='<div class="toolbar"><button class="btn sec" onclick="window.print()">Imprimir / Salvar PDF</button></div>';
+    html+=blockHier();      // identificação da hierarquia
+    html+=blockMedias(people);  // 1a
+    html+=blockFit(people);     // aderência hierárquica
+    html+=blockPainel(people);  // estatísticas/gráficos
+    html+=blockPlano(people);   // plano personalizado por pessoa (gestor)
+    host.innerHTML=html;
+    bindHier();
+  }
+
+  // ---------- Bloco: identificação da hierarquia ----------
+  function blockHier(){
+    var opts=function(sel){return '<option value="">— não identificado —</option>'+ALL.slice().sort(function(a,b){return norm(a.name)<norm(b.name)?-1:1;}).map(function(p){return '<option value="'+p.__i+'"'+(sel===p.__i?' selected':'')+'>'+escn(p.name)+' · '+escn(p.lider||'Outros')+'</option>';}).join('');};
+    var rows=ROLES.map(function(r){
+      return '<div class="row"><label>'+r.role+' · '+r.key+'</label><select data-role="'+r.key+'">'+opts(hierMap[r.key])+'</select></div>';
+    }).join('');
+    var missing=ROLES.filter(function(r){return hierMap[r.key]==null;});
+    var warn=missing.length?'<div class="warn">Não encontrei respondente para: <b>'+missing.map(function(m){return m.key;}).join(', ')+'</b>. Selecione manualmente acima (ou essa pessoa ainda não respondeu). A aderência só é calculada para líderes identificados.</div>':'';
+    return '<div class="card"><h2 class="collapse-h" onclick="this.parentNode.querySelector(\'.hbody\').classList.toggle(\'hide\')">Hierarquia da análise <span class="arw">(ajustar ▾)</span></h2>'
+      +'<div class="hbody"><p class="lead" style="font-size:13px;color:var(--muted);margin-bottom:10px;">Gestor <b>Rodolfo</b> → líderes <b>Daniel, Junior e Gustavo</b> → demais assessores. Confirme qual registro corresponde a cada líder (pré-preenchido pelo primeiro nome).</p>'
+      +'<div class="hierpick">'+rows+'</div>'+warn+'</div></div>';
+  }
+  function bindHier(){
+    var sels=document.querySelectorAll('select[data-role]');
+    sels.forEach(function(s){ s.onchange=function(){var v=this.value; hierMap[this.getAttribute('data-role')]=(v===''?null:+v); saveHier(); draw();}; });
+  }
+
+  // ---------- Bloco 1a: médias & extremos ----------
+  function blockMedias(people){
+    var N=people.length;
+    var sc=people.map(function(p){return SC[p.__i];});
+    var avg={},mn={},mx={},lo={},mi={},hi={};
+    var totLo=0,totMi=0,totHi=0;
+    H.ORDER.forEach(function(k){
+      var v=sc.map(function(s){return s[k];});
+      avg[k]=Math.round(v.reduce(function(a,b){return a+b;},0)/N);
+      mn[k]=Math.min.apply(null,v); mx[k]=Math.max.apply(null,v);
+      lo[k]=v.filter(function(x){return x<30;}).length;
+      hi[k]=v.filter(function(x){return x>70;}).length;
+      mi[k]=N-lo[k]-hi[k];
+      totLo+=lo[k];totMi+=mi[k];totHi+=hi[k];
+    });
+    var totMed=N*H.ORDER.length;
+
+    // KPIs de setor (person×escala)
+    var kpis='<div class="kpis">'
+      +'<div class="kpi"><div class="v">'+N+'</div><div class="l">respondentes no filtro</div></div>'
+      +'<div class="kpi"><div class="v" style="color:var(--lowc)">'+pct(totLo,totMed)+'%</div><div class="l">medições em zona baixa (&lt;30)</div></div>'
+      +'<div class="kpi"><div class="v" style="color:var(--midc)">'+pct(totMi,totMed)+'%</div><div class="l">na média (30–70)</div></div>'
+      +'<div class="kpi"><div class="v" style="color:var(--highc)">'+pct(totHi,totMed)+'%</div><div class="l">em zona alta (&gt;70)</div></div>'
+      +'</div>';
+
+    // médias por escala (barras) — 3 dimensões
+    function bars(list,inv){return list.map(function(k){
+      return '<div class="sbar"><div class="lab">'+H.SCALES[k].name+'</div>'
+        +'<div class="track"><div class="zone" style="left:30%"></div><div class="zone" style="left:70%"></div>'
+        +'<div class="fill '+({HPI:'hpi',HDS:'hds',MVPI:'mvpi'}[inv])+'" style="width:'+avg[k]+'%"></div></div>'
+        +'<div class="val">'+avg[k]+' <small>('+mn[k]+'–'+mx[k]+')</small></div></div>';
+    }).join('');}
+
+    // distribuição por setor (barras empilhadas)
+    function segs(list){return list.map(function(k){
+      var pl=pct(lo[k],N),ph=pct(hi[k],N),pm=100-pl-ph;
+      function seg(cls,p,c){return p>0?'<div class="'+cls+'" style="width:'+p+'%">'+(p>=12?c:'')+'</div>':'';}
+      return '<div class="seg"><div class="lab">'+H.SCALES[k].name+'</div>'
+        +'<div class="segbar">'+seg('lo',pl,lo[k])+seg('mi',pm,mi[k])+seg('hi',ph,hi[k])+'</div>'
+        +'<div class="val">'+pl+'/'+pm+'/'+ph+'%</div></div>';
+    }).join('');}
+
+    // Extremos: quem está baixo / alto por escala
+    function extremeList(kind){
+      var rows=H.ORDER.map(function(k){
+        var names=people.filter(function(p){var v=SC[p.__i][k];return kind==='lo'?v<30:v>70;})
+          .sort(function(a,b){return (kind==='lo'?SC[a.__i][k]-SC[b.__i][k]:SC[b.__i][k]-SC[a.__i][k]);})
+          .map(function(p){return escn(p.name.split(' ')[0])+' '+(SC[p.__i][k]);});
+        if(!names.length) return '';
+        return '<li><b>'+H.SCALES[k].name+'</b> <span style="color:var(--muted)">('+H.SCALES[k].inv+')</span>: '+names.map(function(n){return '<span class="chip '+kind+'">'+n+'</span>';}).join('')+'</li>';
+      }).filter(Boolean).join('');
+      return rows||'<li style="color:var(--muted)">Ninguém neste extremo no conjunto atual.</li>';
+    }
+
+    // Quem está "na média" x "nos extremos" (por pessoa)
+    var perPerson=people.map(function(p){
+      var s=SC[p.__i],l=0,h=0;
+      H.ORDER.forEach(function(k){if(s[k]<30)l++;else if(s[k]>70)h++;});
+      return {p:p,lo:l,hi:h,mid:H.ORDER.length-l-h};
+    }).sort(function(a,b){return b.mid-a.mid;});
+    var ppRows=perPerson.map(function(r){
+      return '<tr><td>'+escn(r.p.name)+'</td><td>'+escn(r.p.lider||'Outros')+'</td>'
+        +'<td class="num">'+pct(r.mid,H.ORDER.length)+'%</td>'
+        +'<td class="num" style="color:var(--lowc)">'+r.lo+'</td>'
+        +'<td class="num" style="color:var(--highc)">'+r.hi+'</td></tr>';
+    }).join('');
+
+    var leg='<div class="legend"><span><b style="background:var(--lowc)"></b>Baixo &lt;30</span><span><b style="background:var(--midc)"></b>Média 30–70</span><span><b style="background:var(--highc)"></b>Alto &gt;70</span></div>';
+
+    return '<div class="card"><h2>1 · Médias gerais e extremos</h2>'+kpis
+      +'<p class="lead" style="font-size:13px;color:var(--muted);margin:12px 0 4px;">Percentual do time em cada setor considerando todas as 28 escalas de todos os respondentes filtrados.</p></div>'
+      +'<div class="card"><h2>Média por escala <span style="font-weight:400;font-size:12px;color:var(--muted)">(faixa min–máx do time)</span></h2>'
+        +'<h3 style="margin:4px 0 6px">Estilo (HPI)</h3>'+bars(H.HPI,'HPI')
+        +'<h3 style="margin:14px 0 6px">Riscos (HDS)</h3>'+bars(H.HDS,'HDS')
+        +'<h3 style="margin:14px 0 6px">Valores (MVPI)</h3>'+bars(H.MVPI,'MVPI')+'</div>'
+      +'<div class="card"><h2>Distribuição por setor (% baixo / média / alto)</h2>'+leg
+        +'<h3 style="margin:4px 0 6px">Estilo (HPI)</h3>'+segs(H.HPI)
+        +'<h3 style="margin:14px 0 6px">Riscos (HDS)</h3>'+segs(H.HDS)
+        +'<h3 style="margin:14px 0 6px">Valores (MVPI)</h3>'+segs(H.MVPI)+'</div>'
+      +'<div class="card"><h2>Quem está nos extremos</h2><div class="two">'
+        +'<div class="kard neg"><h3>Abaixo de 30 (baixo)</h3><ul class="clean neg">'+extremeList('lo')+'</ul></div>'
+        +'<div class="kard" style="border-top:4px solid var(--highc)"><h3 style="color:var(--highc)">Acima de 70 (alto)</h3><ul class="clean neu">'+extremeList('hi')+'</ul></div>'
+      +'</div></div>'
+      +'<div class="card"><h2>Perfil por pessoa: mais "na média" × mais "nos extremos"</h2>'
+        +'<p class="lead" style="font-size:12.5px;color:var(--muted);margin-bottom:8px;">Ordenado do mais equilibrado (maior % de traços na média) ao mais marcante.</p>'
+        +'<table class="tbl"><thead><tr><th>Respondente</th><th>Líder</th><th style="text-align:center">% na média</th><th style="text-align:center">nº baixos</th><th style="text-align:center">nº altos</th></tr></thead><tbody>'+ppRows+'</tbody></table></div>';
+  }
+
+  // ---------- Bloco 2: aderência hierárquica ----------
+  function blockFit(people){
+    var gProf=hierProfile(GESTOR_KEY), gName=hierName(GESTOR_KEY);
+    var lids=LIDER_KEYS.map(function(k){return {key:k,name:hierName(k),prof:hierProfile(k),i:hierMap[k]};}).filter(function(l){return l.prof;});
+    var out='<div class="card"><h2>2 · Aderência de perfil na hierarquia</h2>';
+    if(!lids.length){ out+='<div class="warn">Nenhum dos líderes (Daniel, Junior, Gustavo) foi identificado entre os respondentes. Ajuste na seção "Hierarquia da análise" acima.</div></div>'; return out; }
+
+    // 2a) Gestor × líderes
+    out+='<h3 style="margin-bottom:8px">Gestor Rodolfo × líderes</h3>';
+    if(!gProf){ out+='<div class="warn" style="margin-bottom:12px">Rodolfo (gestor) não identificado — selecione-o na seção acima para calcular esta relação.</div>'; }
+    else{
+      var gf=lids.map(function(l){return {l:l,f:fit(gProf,l.prof)};}).sort(function(a,b){return b.f.overall-a.f.overall;});
+      out+='<table class="tbl" style="margin-bottom:6px"><thead><tr><th>Líder</th><th style="text-align:center">Aderência</th><th style="text-align:center">Valores</th><th style="text-align:center">Estilo</th><th style="text-align:center">Riscos</th><th>Observação</th></tr></thead><tbody>';
+      gf.forEach(function(r){
+        var obs=r.f.sharedRisk.length?'Risco comum: '+r.f.sharedRisk.map(function(k){return H.SCALES[k].name;}).join(', '):(r.f.val>=r.f.est&&r.f.val>=r.f.ris?'Alinhamento de valores':'—');
+        out+='<tr><td><b>'+escn(r.l.name)+'</b></td><td class="num" style="color:var(--acc)">'+r.f.overall+'%</td><td class="num">'+r.f.val+'</td><td class="num">'+r.f.est+'</td><td class="num">'+r.f.ris+'</td><td style="font-size:12px;color:var(--muted)">'+obs+'</td></tr>';
+      });
+      out+='</tbody></table>';
+      out+='<p class="note">Maior sintonia de Rodolfo com <b>'+escn(gf[0].l.name)+'</b> ('+gf[0].f.overall+'%); menor com <b>'+escn(gf[gf.length-1].l.name)+'</b> ('+gf[gf.length-1].f.overall+'%). Valores/Estilo/Riscos são as três dimensões (0–100, quanto maior mais parecidos).</p>';
+    }
+
+    // 2b) Assessores → melhor líder
+    var leaderIds={}; ROLES.forEach(function(r){if(hierMap[r.key]!=null)leaderIds[hierMap[r.key]]=true;});
+    var assessores=people.filter(function(p){return !leaderIds[p.__i];});
+    out+='<h3 style="margin:18px 0 4px">Demais assessores → líder de maior aderência</h3>';
+    out+='<p class="lead" style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Para cada assessor (respeitando o filtro), a aderência de perfil com Daniel, Junior e Gustavo. O líder recomendado é o de maior aderência — considere junto com o desempenho e o contexto de cada um.</p>';
+    if(!assessores.length){ out+='<div class="warn">Nenhum assessor no conjunto filtrado (apenas líderes/gestor). Marque mais líderes no filtro.</div></div>'; return out; }
+
+    var keepCnt=0, moveCnt=0;
+    var cards=assessores.map(function(p){
+      var prof=SC[p.__i];
+      var fits=lids.map(function(l){return {l:l,f:fit(prof,l.prof)};}).sort(function(a,b){return b.f.overall-a.f.overall;});
+      var best=fits[0];
+      var cur=p.lider||'Outros';
+      var already = LIDER_KEYS.some(function(k){return norm(k)===norm(cur);}) && norm(cur)===norm(best.l.key);
+      if(already) keepCnt++; else if(LIDER_KEYS.some(function(k){return norm(k)===norm(cur);})) moveCnt++;
+      var maxv=fits[0].f.overall||1;
+      var rows=LIDER_KEYS.map(function(k){
+        var r=fits.filter(function(x){return x.l.key===k;})[0]; if(!r) return '';
+        var isBest=(r.l.key===best.l.key);
+        return '<div class="fitrow'+(isBest?' best':'')+'"><div class="nm">'+escn(r.l.name)+(isBest?' ★':'')+'</div>'
+          +'<div class="fbar"><div class="ff" style="width:'+Math.round(r.f.overall/ (maxv||1) *100)+'%"></div></div>'
+          +'<div class="pc">'+r.f.overall+'%</div></div>';
+      }).join('');
+      var badge = LIDER_KEYS.some(function(k){return norm(k)===norm(cur);})
+        ? (already?'<span class="badge keep">já é o mais aderente</span>':'<span class="badge move">sugestão: '+escn(best.l.name)+'</span>')
+        : '<span class="badge move">sugestão: '+escn(best.l.name)+'</span>';
+      return '<div class="fitc"><div class="hd"><div class="who">'+escn(p.name)+'</div><div class="cur">líder atual: <b>'+escn(cur)+'</b> '+badge+'</div></div>'
+        +rows+'<p class="note">'+fitRationale(best.f,best.l.name)+'</p></div>';
+    }).join('');
+
+    var resumo='<p class="note" style="margin:0 0 12px"><b>'+keepCnt+'</b> assessor(es) já estão com o líder de maior aderência; <b>'+moveCnt+'</b> teriam maior aderência com outro líder do trio.</p>';
+    return out+resumo+cards+'</div>';
+  }
+
+  // ---------- Bloco 3: painel de estatísticas / gráficos ----------
+  function blockPainel(people){
+    var N=people.length;
+    var sc=people.map(function(p){return SC[p.__i];});
+    var avg={}; H.ORDER.forEach(function(k){avg[k]=Math.round(sc.reduce(function(a,s){return a+s[k];},0)/N);});
+
+    // arquétipos
+    var archeList=[{k:'Relacional',c:'#3F6EA5'},{k:'Estruturado',c:'#2e7d5b'},{k:'Resultado',c:'#b8860b'},{k:'Estratégico',c:'#7a4fa3'}];
+    var arche={}; archeList.forEach(function(a){arche[a.k]=0;});
+    sc.forEach(function(s){arche[H.archetype(s).label]++;});
+    var dom=archeList.slice().sort(function(a,b){return arche[b.k]-arche[a.k];})[0];
+
+    // vetor médio (arquétipo) para radar
+    var tv=archVec(avg);
+
+    // forças coletivas / riscos
+    var forcas=H.HPI.concat(H.MVPI).filter(function(k){return avg[k]>=65;}).sort(function(a,b){return avg[b]-avg[a];}).slice(0,6);
+    var hiCnt={}; H.HDS.forEach(function(k){hiCnt[k]=sc.filter(function(s){return s[k]>70;}).length;});
+    var riscos=H.HDS.filter(function(k){return hiCnt[k]>0;}).sort(function(a,b){return hiCnt[b]-hiCnt[a]||avg[b]-avg[a];}).slice(0,6);
+
+    // traços marcantes mais repetidos (todas as escalas)
+    var rep=H.ORDER.map(function(k){
+      var h=sc.filter(function(s){return s[k]>70;}).length, l=sc.filter(function(s){return s[k]<30;}).length;
+      var dir=h>=l?{n:h,t:'alto'}:{n:l,t:'baixo'};
+      return {k:k,n:dir.n,t:dir.t,share:pct(dir.n,N)};
+    }).filter(function(x){return x.n>=2;}).sort(function(a,b){return b.n-a.n;}).slice(0,6);
+    var repHTML=rep.length?rep.map(function(x){return '<li><b>'+H.SCALES[x.k].name+'</b> '+x.t+' — '+x.n+' de '+N+' ('+x.share+'%) <span style="color:var(--muted)">'+H.SCALES[x.k].inv+'</span></li>';}).join(''):'<li style="color:var(--muted)">Sem traço repetido em ≥2 pessoas.</li>';
+
+    // distribuição arquétipo (barras)
+    var archMax=Math.max.apply(null,archeList.map(function(a){return arche[a.k];}))||1;
+    var archBars=archeList.map(function(a){
+      return '<div class="sbar"><div class="lab">'+a.k+'</div><div class="track"><div class="fill" style="width:'+Math.round(arche[a.k]/archMax*100)+'%;background:'+a.c+'"></div></div><div class="val">'+arche[a.k]+' <small>('+pct(arche[a.k],N)+'%)</small></div></div>';
+    }).join('');
+
+    // dimensão média geral
+    function dimAvg(keys){return Math.round(keys.reduce(function(a,k){return a+avg[k];},0)/keys.length);}
+    var dimEst=dimAvg(H.HPI),dimRis=dimAvg(H.HDS),dimVal=dimAvg(H.MVPI);
+
+    // pares mais aderentes / diferentes
+    var pairSim=null,pairDif=null;
+    if(N>=2){for(var i=0;i<N;i++)for(var j=i+1;j<N;j++){var d=H.distance(sc[i],sc[j]);if(!pairSim||d<pairSim.d)pairSim={i:i,j:j,d:d};if(!pairDif||d>pairDif.d)pairDif={i:i,j:j,d:d};}}
+    function simPct(d){return Math.max(0,Math.min(100,Math.round(100-d)));}
+    var pairHTML = N<2 ? '<p class="lead" style="font-size:13px;color:var(--muted)">É necessário ao menos 2 respondentes para comparar.</p>'
+      : '<div class="two"><div class="kard pos"><h3>Mais aderentes</h3><p class="lead"><b>'+escn(people[pairSim.i].name)+'</b> ↔ <b>'+escn(people[pairSim.j].name)+'</b><br><span style="color:var(--muted);font-size:13px">'+simPct(pairSim.d)+'% de aderência</span></p></div>'
+      +'<div class="kard neg"><h3>Mais diferentes</h3><p class="lead"><b>'+escn(people[pairDif.i].name)+'</b> ↔ <b>'+escn(people[pairDif.j].name)+'</b><br><span style="color:var(--muted);font-size:13px">'+simPct(pairDif.d)+'% de aderência</span></p></div></div>';
+
+    var kpis='<div class="kpis">'
+      +'<div class="kpi"><div class="v" style="font-size:18px;line-height:1.7">'+dom.k+'</div><div class="l">perfil padrão do time</div></div>'
+      +'<div class="kpi"><div class="v" style="color:var(--hpi)">'+dimEst+'</div><div class="l">estilo médio (HPI)</div></div>'
+      +'<div class="kpi"><div class="v" style="color:var(--hds)">'+dimRis+'</div><div class="l">risco médio (HDS)</div></div>'
+      +'<div class="kpi"><div class="v" style="color:var(--mvpi)">'+dimVal+'</div><div class="l">valores médio (MVPI)</div></div>'
+      +'</div>';
+
+    return '<div class="card"><h2>3 · Painel de estatísticas de perfil</h2>'+kpis+'</div>'
+      +'<div class="card"><h2>Mapa médio do time</h2><div class="two" style="align-items:center">'
+        +'<div style="text-align:center">'+radar(tv,['Relacional','Estruturado','Resultado','Estratégico'],260,'#3F6EA5')+'</div>'
+        +'<div><h3 style="margin-bottom:8px">Distribuição por perfil</h3>'+archBars
+        +'<p class="note">Perfil que mais se repete: <b>'+dom.k+'</b> ('+arche[dom.k]+' de '+N+', '+pct(arche[dom.k],N)+'%). O radar mostra a média do time nos quatro eixos de perfil (0–100).</p></div>'
+      +'</div></div>'
+      +'<div class="card"><h2>Características mais relevantes</h2><div class="three">'
+        +'<div class="kard pos"><h3>Forças coletivas</h3><ul class="clean pos">'+(forcas.length?forcas.map(function(k){return '<li><b>'+H.SCALES[k].name+'</b> — média '+avg[k]+'</li>';}).join(''):'<li style="color:var(--muted)">Sem força coletiva ≥65.</li>')+'</ul></div>'
+        +'<div class="kard neg"><h3>Riscos a acompanhar</h3><ul class="clean neg">'+(riscos.length?riscos.map(function(k){return '<li><b>'+H.SCALES[k].name+'</b> — '+hiCnt[k]+' de '+N+' em zona alta</li>';}).join(''):'<li style="color:var(--muted)">Nenhum risco em zona alta.</li>')+'</ul></div>'
+        +'<div class="kard" style="border-top:4px solid var(--acc)"><h3 style="color:var(--acc)">Traços mais repetidos</h3><ul class="clean neu">'+repHTML+'</ul></div>'
+      +'</div></div>'
+      +'<div class="card"><h2>Perfis mais aderentes e mais diferentes</h2>'+pairHTML+'</div>';
+  }
+
+  // ---------- Bloco 4: plano personalizado por pessoa (visão do gestor) ----------
+  var MOTIV={
+    REC:'Reconhecimento visível — destaque as entregas publicamente e nomeie o mérito.',
+    POD:'Influência e escopo — dê autonomia, protagonismo e voz nas decisões.',
+    HED:'Clima leve — ambiente descontraído e boas celebrações tornam o trabalho prazeroso.',
+    ALT:'Propósito de servir — conecte cada tarefa ao impacto positivo em clientes e pessoas.',
+    AFI:'Pertencimento — rituais de time, proximidade e senso de grupo engajam.',
+    TRA:'Coerência de valores — mostre o alinhamento entre a missão da área e princípios sólidos.',
+    SEG:'Estabilidade — previsibilidade, clareza de regras e baixo risco geram confiança.',
+    COM:'Resultado e negócio — metas, números e recompensa por performance motivam.',
+    EST:'Qualidade e capricho — valorize o padrão, o acabamento e o bem-feito.',
+    CIE:'Racional e dados — problemas analíticos e decisões por evidência engajam.'
+  };
+  function topValues(s){ return H.MVPI.slice().sort(function(a,b){return s[b]-s[a];}).filter(function(k,i){return s[k]>=60||i<2;}).slice(0,4); }
+  function recognizeStyle(s){
+    var r=[];
+    if(s.REC>=65) r.push('elogio público e visibilidade das conquistas'); else if(s.REC<30) r.push('reconhecimento reservado, no 1:1 (evite holofote)');
+    if(s.POD>=65) r.push('escopo maior, projetos de destaque e mais autonomia');
+    if(s.COM>=65) r.push('metas claras, bônus e ligação direta com resultado');
+    if(s.ALT>=65) r.push('feedback de clientes/pessoas impactadas pelo trabalho dele(a)');
+    if(s.AFI>=65) r.push('reconhecimento diante do grupo e momentos de integração');
+    if(s.HED>=65) r.push('celebrar as vitórias com leveza');
+    if(s.EST>=65) r.push('valorizar a qualidade e o capricho da entrega');
+    if(!r.length) r.push('reconhecimento consistente e específico sobre o que fez bem');
+    return r.slice(0,3);
+  }
+  function communicateStyle(s){
+    var r=[];
+    if(s.AJU<30) r.push('cuide da relação antes da crítica; foque no comportamento, não na pessoa, e equilibre com reforço positivo');
+    if(s.SEN>=70) r.push('seja claro e direto — ele(a) tende a evitar conflito, então não deixe o recado ambíguo');
+    if(s.ARR>=65) r.push('traga dados e envolva-o(a) na solução; evite bater de frente com o ego');
+    if(s.CET>=65) r.push('seja transparente e explique o porquê das decisões');
+    if(s.PAS>=65) r.push('abra espaço para a discordância aparecer na hora, não por baixo');
+    if(!r.length) r.push('feedback direto, objetivo e frequente funciona bem');
+    return r.slice(0,3);
+  }
+  function autonomyStyle(s){
+    var r=[];
+    if(s.PRU>=65) r.push('é confiável com prazos — delegue com clareza de padrão e resultado');
+    if(s.PER>=70) r.push('combine o nível "bom o suficiente" para evitar perfeccionismo/microgestão');
+    if(s.CAU>=65) r.push('dê segurança e respaldo para decidir sob incerteza');
+    if(s.AMB>=65||s.POD>=65) r.push('ofereça desafios crescentes e visibilidade — retém pela ambição');
+    if(s.INQ>=65||s.IMA>=65) r.push('reserve espaço para ideias e inovação, com um filtro prático');
+    if(s.OBS>=65) r.push('estimule-o(a) a se posicionar e a dizer "não" quando necessário');
+    if(s.RES>=65) r.push('respeite a necessidade de foco individual, mas peça conexão com o time');
+    if(!r.length) r.push('delegue com clareza de objetivo e acompanhe em cadência leve');
+    return r.slice(0,3);
+  }
+  function stressWatch(s){
+    var ks=H.HDS.filter(function(k){return s[k]>70;}).sort(function(a,b){return s[b]-s[a];}).slice(0,3);
+    if(!ks.length) return [{n:'Sem risco em zona alta',t:'Bom autocontrole sob pressão — mantenha o hábito de pedir feedback.'}];
+    return ks.map(function(k){return {n:H.SCALES[k].name+' ('+s[k]+')',t:H.SCALES[k].tip||H.SCALES[k].risk};});
+  }
+  function blockPlano(people){
+    var out='<div class="card"><h2>4 · Plano personalizado por pessoa <span class="tag" style="background:var(--navy)">gestor</span></h2>'
+      +'<p class="lead" style="font-size:13px;color:var(--muted)">Para cada integrante do time (respeitando o filtro), um guia prático de como gerar valor <b>onde ele(a) enxerga valor</b> — a partir dos próprios valores e respostas — para uma gestão personalizada e aderente.</p></div>';
+    var cards=people.map(function(p){
+      var s=SC[p.__i], arch=H.archetype(s), tv=topValues(s), an=H.analyze(s);
+      var chips=tv.map(function(k){return '<span class="chip hi" style="background:#eaf1f8;color:#204d73">'+H.SCALES[k].name+' '+s[k]+'</span>';}).join('');
+      var alavanca=MOTIV[tv[0]]||'reconhecimento consistente e específico.';
+      function li(arr){return arr.map(function(x){return '<li>'+x+'</li>';}).join('');}
+      var motivaHTML=tv.map(function(k){return '<li>'+MOTIV[k]+'</li>';}).join('');
+      var stress=stressWatch(s).map(function(x){return '<li><b>'+x.n+'</b> — '+x.t+'</li>';}).join('');
+      return '<div class="fitc"><div class="hd"><div class="who">'+escn(p.name)+'</div>'
+        +'<div class="cur">líder: <b>'+escn(p.lider||'Outros')+'</b> · perfil <b>'+arch.label+'</b></div></div>'
+        +'<div style="margin-bottom:10px">'+chips+'</div>'
+        +'<div class="kard" style="border-top:4px solid var(--gold);margin-bottom:10px;background:#fbf7ee"><h3 style="color:var(--gold)">Alavanca principal de engajamento</h3><p class="lead" style="font-size:13px">'+alavanca+'</p></div>'
+        +'<div class="three">'
+          +'<div class="kard pos"><h3>Motiva-se por</h3><ul class="clean pos">'+motivaHTML+'</ul></div>'
+          +'<div class="kard" style="border-top:4px solid var(--acc)"><h3 style="color:var(--acc)">Como reconhecer</h3><ul class="clean neu">'+li(recognizeStyle(s))+'</ul></div>'
+          +'<div class="kard" style="border-top:4px solid var(--s)"><h3 style="color:var(--s)">Comunicar & dar feedback</h3><ul class="clean pos">'+li(communicateStyle(s))+'</ul></div>'
+        +'</div>'
+        +'<div class="two" style="margin-top:12px">'
+          +'<div class="kard" style="border-top:4px solid var(--navy)"><h3 style="color:var(--navy)">Delegar & dar autonomia</h3><ul class="clean neu">'+li(autonomyStyle(s))+'</ul></div>'
+          +'<div class="kard neg"><h3>Sob estresse, vigiar</h3><ul class="clean neg">'+stress+'</ul></div>'
+        +'</div>'
+        +'<p class="note"><b>Em resumo:</b> '+an.frase.replace(/^Um\(a\) profissional que /,'Gera resultado quando ')+'</p></div>';
+    }).join('');
+    return out+cards;
+  }
+
+})();
+</script>
+</body>
+</html>
