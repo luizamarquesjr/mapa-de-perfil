@@ -553,6 +553,24 @@
 
     // ---- Ranking de líderes "coringa" (versatilidade) ----
     var medals=['🥇','🥈','🥉'];
+    var ARCHES=['Relacional','Estruturado','Resultado','Estratégico'];
+    function leaderProfile(s){
+      var arch=H.archetype(s).label;
+      var traits=H.HPI.slice().sort(function(a,b){return s[b]-s[a];}).filter(function(k){return s[k]>=65;}).slice(0,2).map(function(k){return H.SCALES[k].name;});
+      var vals=H.MVPI.slice().sort(function(a,b){return s[b]-s[a];}).slice(0,2).map(function(k){return H.SCALES[k].name;});
+      var risk=H.HDS.filter(function(k){return s[k]>70;}).sort(function(a,b){return s[b]-s[a];}).slice(0,1).map(function(k){return H.SCALES[k].name;});
+      var t='<b>Perfil:</b> '+arch;
+      if(traits.length) t+=' — forte em '+traits.join(', ');
+      if(vals.length) t+='; valoriza '+vals.join(' e ');
+      if(risk.length) t+='; atenção a '+risk[0];
+      return t+'.';
+    }
+    function idealSub(lkey){
+      var g={}; ARCHES.forEach(function(a){g[a]={s:0,n:0};});
+      AF.forEach(function(o){ var a=H.archetype(SC[o.p.__i]).label; g[a].s+=adher(o,lkey); g[a].n++; });
+      var best=null; ARCHES.forEach(function(a){ if(g[a].n){var av=g[a].s/g[a].n; if(!best||av>best.av)best={a:a,av:Math.round(av),n:g[a].n};} });
+      return best;
+    }
     var coringa=lids.map(function(l){
       var sum=0, top=0;
       AF.forEach(function(o){ var a=adher(o,l.key); sum+=a; if(o.fits[0].f.overall - a <= TIE) top++; });
@@ -560,13 +578,16 @@
     }).sort(function(a,b){return b.avg-a.avg || b.top-a.top;});
     var maxAvg=coringa[0]?(coringa[0].avg||1):1;
     var coringaRows=coringa.map(function(c,i){
+      var ids=idealSub(c.l.key);
       return '<div class="fitrow"><div class="nm">'+(medals[i]||(i+1)+'º')+' <b>'+escn(c.l.name)+'</b></div>'
         +'<div class="fbar"><div class="ff" style="width:'+Math.round(c.avg/maxAvg*100)+'%;background:'+(i===0?'var(--gold)':'var(--midc)')+'"></div></div>'
         +'<div class="pc">'+c.avg+'%</div></div>'
-        +'<div style="font-size:11.5px;color:var(--muted);margin:-2px 0 10px 4px">aderência média ao time · é o mais aderente (ou empate técnico) para <b>'+c.top+'</b> de '+AF.length+' assessores</div>';
+        +'<div style="font-size:11.5px;color:var(--muted);margin:-2px 0 3px 4px">aderência média ao time · é o mais aderente (ou empate técnico) para <b>'+c.top+'</b> de '+AF.length+' assessores</div>'
+        +'<div style="font-size:11.5px;color:var(--ink);margin:0 0 2px 4px">'+leaderProfile(c.l.prof)+'</div>'
+        +'<div style="font-size:11.5px;color:var(--acc);margin:0 0 14px 4px"><b>Liderado ideal:</b> perfil '+(ids?ids.a:'—')+(ids?' (aderência média '+ids.av+'% neste time)':'')+' — priorize esse perfil em novas contratações sob '+escn(c.l.name.split(' ')[0])+'.</div>';
     }).join('');
     var coringaCard='<div class="allocwrap"><h3 class="allochd">Ranking de líderes "coringa" (versatilidade)</h3>'
-      +'<p class="lead" style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Pontuação = <b>aderência média de cada líder a todos os assessores</b> do conjunto filtrado. Quanto maior, mais o líder "encaixa" com a maioria dos perfis — o líder mais <b>coringa</b>. Útil para alocar <b>novas contratações</b> cujo perfil exato ainda não conhecemos: na dúvida, o líder no topo tende a ter boa sintonia com um perfil qualquer.</p>'
+      +'<p class="lead" style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Pontuação = <b>aderência média de cada líder a todos os assessores</b> do conjunto filtrado. Quanto maior, mais o líder "encaixa" com a maioria dos perfis — o líder mais <b>coringa</b>. Útil para alocar <b>novas contratações</b> cujo perfil exato ainda não conhecemos. <span style="color:var(--muted)">Um assessor pode contar para mais de um líder quando há empate técnico (±2%) entre eles, então os totais podem somar mais que o nº de assessores.</span></p>'
       +coringaRows
       +'<p class="note">Mais coringa: <b>'+escn(coringa[0].l.name)+'</b> — '+coringa[0].avg+'% de aderência média ao time.</p></div>';
 
