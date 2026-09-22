@@ -111,7 +111,7 @@
       var avg=Math.round(sum/scored.length);
       html+='<td><div class="cell'+(H.band(avg)==='mid'?' mid':'')+'" style="'+(H.band(avg)!=='mid'?'background:'+colorOf[inv]:'')+'">'+avg+'</div></td></tr>';
     });
-    html+='</tbody></table><div class="legend">Cor cheia = traço marcante (fora de 30–70). Cinza = média.</div></div>';
+    html+='</tbody></table><div class="legend">Cor cheia = traço marcante (fora de 30–70). Cinza = equilíbrio.</div></div>';
     return html;
   }
   function esc(s){return (s||'').toString().replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});}

@@ -81,6 +81,10 @@
   .badge.keep{background:#e3f0e9;color:var(--s);}
   .badge.move{background:#fbeee0;color:#9a5b17;}
   .stars{color:var(--gold);letter-spacing:1.5px;font-size:12px;}
+  .rankchip{font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;margin-left:2px;white-space:nowrap;}
+  .rankchip.r1{background:#e3f0e9;color:#2e7d5b;}
+  .rankchip.r2{background:#eaf1f8;color:#204d73;}
+  .rankchip.r3{background:#f3eef7;color:#6a4a8a;}
   .allocwrap{margin-top:8px;}
   .allochd{margin:18px 0 4px;border-top:2px solid var(--line);padding-top:14px;font-size:15px;color:var(--navy);}
   .note{font-size:12px;color:var(--muted);margin-top:9px;line-height:1.55;}
@@ -126,7 +130,7 @@
   <div id="content"><div class="card empty">Carregando...</div></div>
 
   <div class="card" id="foot" style="display:none;">
-    <p class="foot"><b>Como ler.</b> Escala 0–100, referenciada na própria amostra (não é percentil normatizado do Hogan). <b>Extremos:</b> abaixo de 30 (baixo) ou acima de 70 (alto); entre 30 e 70 é média. <b>Aderência</b> = semelhança de perfil entre duas pessoas (100% = perfis idênticos), calculada pela diferença média nas 28 escalas. Aderência alta favorece sintonia e comunicação; alguma diferença pode ser complementar. Quando líder e liderado pontuam alto no mesmo risco (HDS), isso é sinalizado como ponto de atenção. Ferramenta educativa de apoio à decisão — não substitui a leitura qualitativa de cada perfil.</p>
+    <p class="foot"><b>Como ler.</b> Escala 0–100, referenciada na própria amostra (não é percentil normatizado do Hogan). <b>Extremos:</b> abaixo de 30 (baixo) ou acima de 70 (alto); entre 30 e 70 é equilíbrio. <b>Aderência</b> = semelhança de perfil entre duas pessoas (100% = perfis idênticos), calculada pela diferença média nas 28 escalas. Aderência alta favorece sintonia e comunicação; alguma diferença pode ser complementar. Quando líder e liderado pontuam alto no mesmo risco (HDS), isso é sinalizado como ponto de atenção. Ferramenta educativa de apoio à decisão — não substitui a leitura qualitativa de cada perfil.</p>
   </div>
 </div>
 
@@ -266,7 +270,7 @@
 
   // ---------- Charts (SVG) ----------
   function radar(vals,labels,size,color){
-    var cx=size/2, cy=size/2, r=size/2-30, n=vals.length, i, out='';
+    var cx=size/2, cy=size/2, r=size/2-40, n=vals.length, i, out='';
     var rings=[25,50,75,100];
     rings.forEach(function(rv){
       var pts=[];
@@ -278,12 +282,14 @@
     for(i=0;i<n;i++){var a=-Math.PI/2+i*2*Math.PI/n, rr=r*Math.max(0,Math.min(100,vals[i]))/100; pp.push((cx+rr*Math.cos(a)).toFixed(1)+','+(cy+rr*Math.sin(a)).toFixed(1));}
     out+='<polygon points="'+pp.join(' ')+'" fill="'+color+'33" stroke="'+color+'" stroke-width="2.5"/>';
     for(i=0;i<n;i++){var a=-Math.PI/2+i*2*Math.PI/n, rr=r*Math.max(0,Math.min(100,vals[i]))/100; out+='<circle cx="'+(cx+rr*Math.cos(a)).toFixed(1)+'" cy="'+(cy+rr*Math.sin(a)).toFixed(1)+'" r="3.2" fill="'+color+'"/>';}
-    for(i=0;i<n;i++){var a=-Math.PI/2+i*2*Math.PI/n, lx=cx+(r+16)*Math.cos(a), ly=cy+(r+16)*Math.sin(a);
-      var anc=Math.abs(Math.cos(a))<0.3?'middle':(Math.cos(a)>0?'start':'end');
-      out+='<text x="'+lx.toFixed(1)+'" y="'+(ly+4).toFixed(1)+'" text-anchor="'+anc+'" font-size="11" font-weight="700" fill="#1f2d3d">'+labels[i]+'</text>';
-      out+='<text x="'+lx.toFixed(1)+'" y="'+(ly+17).toFixed(1)+'" text-anchor="'+anc+'" font-size="10" fill="#5c6675">'+Math.round(vals[i])+'</text>';
+    for(i=0;i<n;i++){var a=-Math.PI/2+i*2*Math.PI/n, co=Math.cos(a), si=Math.sin(a), lx=cx+(r+15)*co, ly=cy+(r+15)*si;
+      var anc=Math.abs(co)<0.3?'middle':(co>0?'start':'end');
+      var yName=ly+(si<-0.3?-4:(si>0.3?9:3)); // topo: nome acima; base: nome primeiro
+      out+='<text x="'+lx.toFixed(1)+'" y="'+yName.toFixed(1)+'" text-anchor="'+anc+'" font-size="10.5" font-weight="700" fill="#1f2d3d">'+labels[i]+'</text>';
+      out+='<text x="'+lx.toFixed(1)+'" y="'+(yName+12).toFixed(1)+'" text-anchor="'+anc+'" font-size="9.5" fill="#5c6675">'+Math.round(vals[i])+'</text>';
     }
-    return '<svg viewBox="0 0 '+size+' '+size+'" width="'+size+'" height="'+size+'">'+out+'</svg>';
+    var PADX=62, PADT=16, PADB=22;
+    return '<svg viewBox="'+(-PADX)+' '+(-PADT)+' '+(size+2*PADX)+' '+(size+PADT+PADB)+'" style="width:100%;max-width:340px;height:auto" preserveAspectRatio="xMidYMid meet">'+out+'</svg>';
   }
 
   // Vetor de arquétipo (4 eixos) de um conjunto de scores
@@ -348,7 +354,7 @@
     var kpis='<div class="kpis">'
       +'<div class="kpi"><div class="v">'+N+'</div><div class="l">respondentes no filtro</div></div>'
       +'<div class="kpi"><div class="v" style="color:var(--lowc)">'+pct(totLo,totMed)+'%</div><div class="l">medições em zona baixa (&lt;30)</div></div>'
-      +'<div class="kpi"><div class="v" style="color:var(--midc)">'+pct(totMi,totMed)+'%</div><div class="l">na média (30–70)</div></div>'
+      +'<div class="kpi"><div class="v" style="color:var(--midc)">'+pct(totMi,totMed)+'%</div><div class="l">em equilíbrio (30–70)</div></div>'
       +'<div class="kpi"><div class="v" style="color:var(--highc)">'+pct(totHi,totMed)+'%</div><div class="l">em zona alta (&gt;70)</div></div>'
       +'</div>';
 
@@ -394,7 +400,7 @@
         +'<td class="num" style="color:var(--highc)">'+r.hi+'</td></tr>';
     }).join('');
 
-    var leg='<div class="legend"><span><b style="background:var(--lowc)"></b>Baixo &lt;30</span><span><b style="background:var(--midc)"></b>Média 30–70</span><span><b style="background:var(--highc)"></b>Alto &gt;70</span></div>';
+    var leg='<div class="legend"><span><b style="background:var(--lowc)"></b>Baixo &lt;30</span><span><b style="background:var(--midc)"></b>Equilíbrio 30–70</span><span><b style="background:var(--highc)"></b>Alto &gt;70</span></div>';
 
     return '<div class="card"><h2>1 · Médias gerais e extremos</h2>'+kpis
       +'<p class="lead" style="font-size:13px;color:var(--muted);margin:12px 0 4px;">Percentual do time em cada setor considerando todas as 28 escalas de todos os respondentes filtrados.</p></div>'
@@ -402,7 +408,8 @@
         +'<h3 style="margin:4px 0 6px">Estilo (HPI)</h3>'+bars(H.HPI,'HPI')
         +'<h3 style="margin:14px 0 6px">Riscos (HDS)</h3>'+bars(H.HDS,'HDS')
         +'<h3 style="margin:14px 0 6px">Valores (MVPI)</h3>'+bars(H.MVPI,'MVPI')+'</div>'
-      +'<div class="card"><h2>Distribuição por setor (% baixo / média / alto)</h2>'+leg
+      +'<div class="card"><h2>Distribuição por setor (% baixo / equilíbrio / alto)</h2>'+leg
+        +'<p class="lead" style="font-size:12.5px;color:var(--muted);margin:2px 0 10px">Cada barra é uma escala e mostra <b>qual fração do time</b> está em cada faixa. Ex.: numa barra <b>10 / 70 / 20</b>, 10% do time pontua <b>baixo</b> (&lt;30), 70% em <b>equilíbrio</b> (30–70) e 20% <b>alto</b> (&gt;70). O número em cada trecho é a quantidade de pessoas; o valor à direita repete os três percentuais.</p>'
         +'<h3 style="margin:4px 0 6px">Estilo (HPI)</h3>'+segs(H.HPI)
         +'<h3 style="margin:14px 0 6px">Riscos (HDS)</h3>'+segs(H.HDS)
         +'<h3 style="margin:14px 0 6px">Valores (MVPI)</h3>'+segs(H.MVPI)+'</div>'
@@ -410,9 +417,9 @@
         +'<div class="kard neg"><h3>Abaixo de 30 (baixo)</h3><ul class="clean neg">'+extremeList('lo')+'</ul></div>'
         +'<div class="kard" style="border-top:4px solid var(--highc)"><h3 style="color:var(--highc)">Acima de 70 (alto)</h3><ul class="clean neu">'+extremeList('hi')+'</ul></div>'
       +'</div></div>'
-      +'<div class="card"><h2>Perfil por pessoa: mais "na média" × mais "nos extremos"</h2>'
-        +'<p class="lead" style="font-size:12.5px;color:var(--muted);margin-bottom:8px;">Ordenado do mais equilibrado (maior % de traços na média) ao mais marcante.</p>'
-        +'<table class="tbl"><thead><tr><th>Respondente</th><th>Líder</th><th style="text-align:center">% na média</th><th style="text-align:center">nº baixos</th><th style="text-align:center">nº altos</th></tr></thead><tbody>'+ppRows+'</tbody></table></div>';
+      +'<div class="card"><h2>Perfil por pessoa: mais "em equilíbrio" × mais "nos extremos"</h2>'
+        +'<p class="lead" style="font-size:12.5px;color:var(--muted);margin-bottom:8px;">Ordenado do mais equilibrado (maior % de traços em equilíbrio) ao mais marcante.</p>'
+        +'<table class="tbl"><thead><tr><th>Respondente</th><th>Líder</th><th style="text-align:center">% em equilíbrio</th><th style="text-align:center">nº baixos</th><th style="text-align:center">nº altos</th></tr></thead><tbody>'+ppRows+'</tbody></table></div>';
   }
 
   // ---------- Bloco 2: aderência hierárquica ----------
@@ -436,24 +443,30 @@
       out+='<p class="note">Maior sintonia de Rodolfo com <b>'+escn(gf[0].l.name)+'</b> ('+gf[0].f.overall+'%); menor com <b>'+escn(gf[gf.length-1].l.name)+'</b> ('+gf[gf.length-1].f.overall+'%). Valores/Estilo/Riscos são as três dimensões (0–100, quanto maior mais parecidos).</p>';
     }
 
-    // 2b) Assessores → melhor líder (com estrelas)
+    // 2b) Assessores → melhor líder (por percentual de aderência + posição no ranking)
     var leaderIds={}; ROLES.forEach(function(r){if(hierMap[r.key]!=null)leaderIds[hierMap[r.key]]=true;});
     var assessores=people.filter(function(p){return !leaderIds[p.__i];});
     var maxL=lids.length;
-    function starStr(n){var s='';for(var i=0;i<maxL;i++)s+=(i<n?'★':'☆');return s;}
-    out+='<h3 style="margin:18px 0 4px">Demais assessores → aderência por líder (estrelas)</h3>';
-    out+='<p class="lead" style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Para cada assessor (respeitando o filtro), a aderência com '+lids.map(function(l){return escn(l.name.split(' ')[0]);}).join(', ')+'. <span class="stars">★★★</span> = líder mais aderente · <span class="stars">★★☆</span> = 2º · <span class="stars">★☆☆</span> = menos aderente.</p>';
+    function ord(n){return n+'º';}
+    function rankChip(rank){return '<span class="rankchip r'+Math.min(rank,3)+'">'+ord(rank)+' mais aderente</span>';}
+    out+='<h3 style="margin:18px 0 4px">Demais assessores → aderência por líder (%)</h3>';
+    out+='<p class="lead" style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Para cada assessor (respeitando o filtro), a <b>aderência em %</b> com '+lids.map(function(l){return escn(l.name.split(' ')[0]);}).join(', ')+' — quanto maior, mais parecidos os perfis. O selo <span class="rankchip r1">1º mais aderente</span> marca a posição de cada líder no ranking daquele assessor. <b>Em caso de empate, a posição melhor fica com o líder atual.</b></p>';
     if(!assessores.length){ out+='<div class="warn">Nenhum assessor no conjunto filtrado (apenas líderes/gestor). Marque mais líderes no filtro.</div></div>'; return out; }
 
+    function curIsLid(o){return lids.some(function(l){return norm(l.key)===norm(o.cur);});}
     var AF=assessores.map(function(p){
-      var prof=SC[p.__i];
-      var fits=lids.map(function(l){return {l:l,f:fit(prof,l.prof)};}).sort(function(a,b){return b.f.overall-a.f.overall;});
-      fits.forEach(function(x,i){x.stars=maxL-i;});
-      return {p:p,fits:fits,cur:p.lider||'Outros'};
+      var prof=SC[p.__i], cur=p.lider||'Outros';
+      var fits=lids.map(function(l){return {l:l,f:fit(prof,l.prof)};}).sort(function(a,b){
+        if(b.f.overall!==a.f.overall) return b.f.overall-a.f.overall;
+        // empate: líder atual do respondente fica na frente
+        var ca=norm(a.l.key)===norm(cur), cb=norm(b.l.key)===norm(cur);
+        return (cb?1:0)-(ca?1:0);
+      });
+      fits.forEach(function(x,i){x.rank=i+1;});
+      return {p:p,fits:fits,cur:cur};
     });
     function adher(o,key){var r=o.fits.filter(function(x){return x.l.key===key;})[0];return r?r.f.overall:0;}
-    function starsFor(o,key){var r=o.fits.filter(function(x){return x.l.key===key;})[0];return r?r.stars:0;}
-    function curIsLid(o){return lids.some(function(l){return norm(l.key)===norm(o.cur);});}
+    function rankFor(o,key){var r=o.fits.filter(function(x){return x.l.key===key;})[0];return r?r.rank:maxL;}
 
     var keepCnt=0, moveCnt=0;
     var cards=AF.map(function(o){
@@ -462,23 +475,23 @@
       if(already) keepCnt++; else if(curIsLid(o)) moveCnt++;
       var maxv=best.f.overall||1;
       var rows=fits.map(function(r){
-        var isBest=(r.l.key===best.l.key);
-        return '<div class="fitrow'+(isBest?' best':'')+'"><div class="nm">'+escn(r.l.name)+' <span class="stars">'+starStr(r.stars)+'</span></div>'
+        var isBest=(r.rank===1);
+        return '<div class="fitrow'+(isBest?' best':'')+'"><div class="nm">'+escn(r.l.name)+' '+rankChip(r.rank)+'</div>'
           +'<div class="fbar"><div class="ff" style="width:'+Math.round(r.f.overall/maxv*100)+'%"></div></div>'
           +'<div class="pc">'+r.f.overall+'%</div></div>';
       }).join('');
-      var badge = curIsLid(o)
-        ? (already?'<span class="badge keep">já é o ★★★</span>':'<span class="badge move">★★★: '+escn(best.l.name)+'</span>')
-        : '<span class="badge move">★★★: '+escn(best.l.name)+'</span>';
+      var badge = already
+        ? '<span class="badge keep">já é o 1º mais aderente ('+best.f.overall+'%)</span>'
+        : '<span class="badge move">1º mais aderente: '+escn(best.l.name)+' ('+best.f.overall+'%)</span>';
       return '<div class="fitc"><div class="hd"><div class="who">'+escn(p.name)+'</div><div class="cur">líder atual: <b>'+escn(cur)+'</b> '+badge+'</div></div>'
         +rows+'<p class="note">'+fitRationale(best.f,best.l.name)+'</p></div>';
     }).join('');
-    var resumo='<p class="note" style="margin:0 0 12px"><b>'+keepCnt+'</b> assessor(es) já estão com o líder ★★★; <b>'+moveCnt+'</b> (dentro do trio) teriam maior aderência com outro líder.</p>';
+    var resumo='<p class="note" style="margin:0 0 12px"><b>'+keepCnt+'</b> assessor(es) já estão com o líder de maior aderência; <b>'+moveCnt+'</b> (dentro do trio) teriam maior aderência com outro líder.</p>';
 
     // ---- Propostas de divisão ----
     function emptyBuckets(){var b={};lids.forEach(function(l){b[l.key]=[];});return b;}
 
-    // Proposta A: menos alterações — mantém quem já está com líder do trio; realoca o resto pelo ★★★
+    // Proposta A: menos alterações — mantém quem já está com líder do trio; realoca o resto pelo 1º mais aderente
     var a1=emptyBuckets();
     AF.forEach(function(o){
       if(curIsLid(o)){ var lk=lids.filter(function(l){return norm(l.key)===norm(o.cur);})[0].key; a1[lk].push(o); }
@@ -509,23 +522,23 @@
     function renderAlloc(title, sub, buckets){
       var counts=lids.map(function(l){return buckets[l.key].length;});
       var mn=Math.min.apply(null,counts), mx=Math.max.apply(null,counts);
-      var q={}, changes=0, adherSum=0, tot=0; q[maxL]=0;q[maxL-1]=0;q[maxL-2]=0;
-      lids.forEach(function(l){ buckets[l.key].forEach(function(o){ var st=starsFor(o,l.key); q[st]=(q[st]||0)+1; adherSum+=adher(o,l.key); tot++; if(norm(o.cur)!==norm(l.key))changes++; }); });
+      var rk={1:0,2:0,3:0}, changes=0, adherSum=0, tot=0;
+      lids.forEach(function(l){ buckets[l.key].forEach(function(o){ var rr=Math.min(rankFor(o,l.key),3); rk[rr]=(rk[rr]||0)+1; adherSum+=adher(o,l.key); tot++; if(norm(o.cur)!==norm(l.key))changes++; }); });
       var cols=lids.map(function(l){
         var list=buckets[l.key].slice().sort(function(a,b){return adher(b,l.key)-adher(a,l.key);});
-        var items=list.map(function(o){var st=starsFor(o,l.key);var chg=norm(o.cur)!==norm(l.key);
-          return '<li><b>'+escn(o.p.name)+'</b> <span class="stars">'+starStr(st)+'</span> <span style="color:var(--muted)">'+adher(o,l.key)+'%</span>'+(chg?' <span class="badge move" style="font-size:9px;padding:1px 6px">de '+escn(o.cur)+'</span>':'')+'</li>';
+        var items=list.map(function(o){var chg=norm(o.cur)!==norm(l.key);
+          return '<li><b>'+escn(o.p.name)+'</b> <span style="color:var(--navy);font-weight:800">'+adher(o,l.key)+'%</span> '+rankChip(rankFor(o,l.key))+(chg?' <span class="badge move" style="font-size:9px;padding:1px 6px">de '+escn(o.cur)+'</span>':'')+'</li>';
         }).join('')||'<li style="color:var(--muted)">—</li>';
         return '<div class="kard"><h3>'+escn(l.name)+' <span style="color:var(--muted);font-weight:600">('+buckets[l.key].length+')</span></h3><ul class="clean">'+items+'</ul></div>';
       }).join('');
-      var qs=(q[maxL]||0)+'×★★★, '+(q[maxL-1]||0)+'×★★☆, '+(q[maxL-2]||0)+'×★☆☆';
+      var qs=(rk[1]||0)+' no 1º líder mais aderente, '+(rk[2]||0)+' no 2º, '+(rk[3]||0)+' no 3º';
       var sum='<p class="note"><b>'+changes+'</b> mudança(s) vs. líder atual · equilíbrio '+mn+'–'+mx+' por líder · aderência média '+(tot?Math.round(adherSum/tot):0)+'% · '+qs+'.</p>';
       return '<div class="allocwrap"><h3 class="allochd">'+title+'</h3><p class="lead" style="font-size:12.5px;color:var(--muted);margin-bottom:4px">'+sub+'</p>'+sum+'<div class="three">'+cols+'</div></div>';
     }
 
     var allocs='<h3 class="allochd">Propostas de divisão dos assessores</h3>'
-      +'<p class="lead" style="font-size:12.5px;color:var(--muted)">Duas formas de dividir os assessores filtrados entre '+lids.map(function(l){return escn(l.name.split(' ')[0]);}).join(', ')+'. As estrelas ao lado de cada nome indicam a aderência daquele assessor ao líder onde foi alocado.</p>'
-      +renderAlloc('Proposta A · menos alterações','Mantém quem já está com um líder do trio; realoca só quem está fora do trio para o líder de maior aderência (★★★).',a1)
+      +'<p class="lead" style="font-size:12.5px;color:var(--muted)">Duas formas de dividir os assessores filtrados entre '+lids.map(function(l){return escn(l.name.split(' ')[0]);}).join(', ')+'. O <b>%</b> ao lado de cada nome é a aderência ao líder onde foi alocado; o selo indica a posição desse líder no ranking do assessor.</p>'
+      +renderAlloc('Proposta A · menos alterações','Mantém quem já está com um líder do trio; realoca só quem está fora do trio para o líder de maior aderência.',a1)
       +renderAlloc('Proposta B · carga equilibrada','Distribui o mais igualmente possível (~'+base+'–'+(base+(N%maxL?1:0))+' por líder), priorizando a maior aderência dentro de cada cota — para ninguém ficar sobrecarregado.',a2);
 
     return out+resumo+cards+allocs+'</div>';

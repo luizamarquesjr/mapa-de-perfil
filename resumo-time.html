@@ -116,7 +116,7 @@
       return list.map(function(sc){
         var v=avg[sc], marc=hi[sc]+lo[sc];
         return '<div class="sbar"><div class="lab">'+H.SCALES[sc].name+'</div>'
-          +'<div class="track"><div class="zone" style="left:'+(inv==='HDS'?70:30)+'%"></div><div class="zone" style="left:'+(inv==='HDS'?90:70)+'%"></div>'
+          +'<div class="track"><div class="zone" style="left:30%"></div><div class="zone" style="left:70%"></div>'
           +'<div class="fill '+colorOf[inv]+'" style="width:'+v+'%"></div></div>'
           +'<div class="val">'+v+' <small>('+mn[sc]+'–'+mx[sc]+')</small></div></div>';
       }).join('');
@@ -142,7 +142,8 @@
     all.forEach(function(sc){ arche[H.archetype(sc).label]++; });
     var domArche=archeList.slice().sort(function(a,b){return arche[b]-arche[a];})[0];
     var archeHTML=archeList.map(function(k){var pv=N?Math.round(arche[k]/N*100):0;return '<div class="kpi"><div class="v">'+arche[k]+'</div><div class="l">'+k+' · '+pv+'%</div></div>';}).join('');
-    var riscoZonaHTML=riscos.length?riscos.map(function(s){return '<li><b>'+H.SCALES[s].name+'</b> — '+hi[s]+' de '+N+' pessoa(s) em zona alta</li>';}).join(''):'<li>Nenhum risco em zona alta no time.</li>';
+    var tdc='padding:7px 9px;border-bottom:1px solid var(--soft);';
+    var riscoZonaHTML=riscos.length?riscos.map(function(s){return '<tr><td style="'+tdc+'"><b>'+H.SCALES[s].name+'</b> <span style="color:var(--muted);font-size:11px">('+H.SCALES[s].inv+')</span></td><td style="'+tdc+'text-align:center;white-space:nowrap;font-weight:700">'+hi[s]+' de '+N+'</td><td style="'+tdc+'color:var(--muted)">'+H.SCALES[s].risk+'</td></tr>';}).join(''):'<tr><td colspan="3" style="'+tdc+'color:var(--muted)">Nenhum risco em zona alta no time.</td></tr>';
     var pairSim=null,pairDif=null;
     if(N>=2){ for(var pi=0;pi<N;pi++)for(var pj=pi+1;pj<N;pj++){ var pd=H.distance(all[pi],all[pj]); if(!pairSim||pd<pairSim.d)pairSim={i:pi,j:pj,d:pd}; if(!pairDif||pd>pairDif.d)pairDif={i:pi,j:pj,d:pd}; } }
     function simPct(d){return Math.max(0,Math.min(100,Math.round(100-d)));}
@@ -160,7 +161,12 @@
       +'<div class="card"><h2>Leitura do time</h2><p class="lead">'+resumo+'</p></div>'
       +'<div class="card"><h2>Distribuição por perfil</h2>'
         +'<div class="kpis">'+archeHTML+'</div>'
-        +'<h3 style="margin-top:16px;font-size:14px;color:var(--navy);">Pessoas por risco em zona alta (&gt; 70)</h3><ul class="clean neg" style="margin-top:6px;">'+riscoZonaHTML+'</ul></div>'
+        +'<h3 style="margin-top:16px;font-size:14px;color:var(--navy);">Pessoas por risco em zona alta (&gt; 70)</h3>'
+        +'<table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px;"><thead><tr>'
+          +'<th style="text-align:left;padding:6px 9px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);background:var(--soft);">Risco</th>'
+          +'<th style="text-align:center;padding:6px 9px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);background:var(--soft);white-space:nowrap;">Em zona alta</th>'
+          +'<th style="text-align:left;padding:6px 9px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);background:var(--soft);">O que significa (pontuação alta)</th>'
+        +'</tr></thead><tbody>'+riscoZonaHTML+'</tbody></table></div>'
       +'<div class="card"><h2>Perfis semelhantes e diferentes</h2>'+simHTML+'</div>'
       +'<div class="card"><h2>Estilo médio do time <span class="tag" style="background:var(--hpi)">HPI</span></h2>'+bars(H.HPI,'HPI')+'</div>'
       +'<div class="card"><h2>Riscos médios do time <span class="tag" style="background:var(--hds)">HDS</span></h2>'+bars(H.HDS,'HDS')+'</div>'

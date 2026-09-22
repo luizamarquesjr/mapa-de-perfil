@@ -61,9 +61,7 @@
 
   function barRow(sc, v, inv){
     var meta=H.SCALES[sc], b=H.band(v), invc=inv.toLowerCase();
-    var zones = inv==='HDS'
-      ? '<div class="zone" style="left:70%"></div><div class="zone" style="left:90%"></div>'
-      : '<div class="zone" style="left:30%"></div><div class="zone" style="left:70%"></div>';
+    var zones = '<div class="zone" style="left:30%"></div><div class="zone" style="left:70%"></div>';
     var txt = b==='high'?meta.high:(b==='low'?meta.low:meta.mid);
     var mk = (b==='mid')?' mk':'';
     return '<div class="sbar"><div class="lab">'+meta.name+'</div><div class="track">'+zones
@@ -86,7 +84,7 @@
       + '<div class="band"><div class="kick">Mapa de Perfil · Relatório individual</div>'
         + '<h1>'+esc(record.name||'Respondente')+'</h1>'
         + '<div class="who">'+(record.email?esc(record.email)+' · ':'')+'Respondido em '+fmtDate(record.date)+'</div></div>'
-      + '<div class="disc"><b>Importante:</b> ferramenta educativa inspirada no modelo de três dimensões (estilo, riscos e valores). Não é o Hogan Assessment nem usa suas perguntas. Pontuações de 0–100 referenciadas na própria escala — não são percentis normatizados. Leitura: abaixo de 30 ou acima de 70 = traço marcante; entre 30 e 70 = média.</div>'
+      + '<div class="disc"><b>Importante:</b> ferramenta educativa inspirada no modelo de três dimensões (estilo, riscos e valores). Não é o Hogan Assessment nem usa suas perguntas. Pontuações de 0–100 referenciadas na própria escala — não são percentis normatizados. Leitura: abaixo de 30 ou acima de 70 = traço marcante; entre 30 e 70 = equilíbrio.</div>'
       + '<div class="card"><h2>Resumo do perfil</h2>'
         + a.resumoParas.map(function(x){return '<p class="lead">'+esc(x)+'</p>';}).join('')
         + '<div class="insight" style="margin-top:10px;"><b>Em uma frase:</b> '+esc(a.frase)+'</div></div>'
