@@ -137,19 +137,34 @@
 
     // Distribuição por perfil (arquétipo) + pares semelhantes/diferentes
     function escn(x){return (x||'').toString().replace(/[<>&]/g,function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});}
+    function pie(data,size){
+      var total=data.reduce(function(s,d){return s+d.val;},0);
+      if(!total) return '<p class="lead" style="color:var(--muted)">Sem dados.</p>';
+      var cx=size/2, cy=size/2, r=size/2-2, ang=-Math.PI/2, out='';
+      data.forEach(function(d){
+        if(d.val<=0) return;
+        var frac=d.val/total, a2=ang+frac*2*Math.PI;
+        if(frac>=0.9999){ out+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="'+d.color+'"/>';
+          out+='<text x="'+cx+'" y="'+(cy+4)+'" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">100%</text>'; }
+        else {
+          var x1=cx+r*Math.cos(ang), y1=cy+r*Math.sin(ang), x2=cx+r*Math.cos(a2), y2=cy+r*Math.sin(a2), large=frac>0.5?1:0;
+          out+='<path d="M'+cx+','+cy+' L'+x1.toFixed(1)+','+y1.toFixed(1)+' A'+r+','+r+' 0 '+large+' 1 '+x2.toFixed(1)+','+y2.toFixed(1)+' Z" fill="'+d.color+'"/>';
+          var mid=(ang+a2)/2, lx=cx+r*0.6*Math.cos(mid), ly=cy+r*0.6*Math.sin(mid);
+          if(frac>=0.07) out+='<text x="'+lx.toFixed(1)+'" y="'+(ly+4).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">'+Math.round(frac*100)+'%</text>';
+        }
+        ang=a2;
+      });
+      return '<svg viewBox="0 0 '+size+' '+size+'" style="width:100%;max-width:'+size+'px;height:auto">'+out+'</svg>';
+    }
+    var ARCH_COLOR={Relacional:'#3F6EA5',Estruturado:'#2e7d5b',Resultado:'#b8860b','Estratégico':'#7a4fa3'};
     var archeList=['Relacional','Estruturado','Resultado','Estratégico'], arche={};
     archeList.forEach(function(k){arche[k]=0;});
     all.forEach(function(sc){ arche[H.archetype(sc).label]++; });
     var domArche=archeList.slice().sort(function(a,b){return arche[b]-arche[a];})[0];
-    var archeHTML=archeList.map(function(k){var pv=N?Math.round(arche[k]/N*100):0;return '<div class="kpi"><div class="v">'+arche[k]+'</div><div class="l">'+k+' · '+pv+'%</div></div>';}).join('');
+    var pieHTML=pie(archeList.map(function(k){return {label:k,val:arche[k],color:ARCH_COLOR[k]};}),190);
+    var legendHTML=archeList.map(function(k){var pv=N?Math.round(arche[k]/N*100):0;return '<div style="display:flex;align-items:center;gap:8px;font-size:13.5px;margin:6px 0"><span style="width:13px;height:13px;border-radius:3px;background:'+ARCH_COLOR[k]+';display:inline-block;flex:none"></span><b>'+k+'</b> <span style="color:var(--muted)">— '+arche[k]+' de '+N+' ('+pv+'%)</span></div>';}).join('');
     var tdc='padding:7px 9px;border-bottom:1px solid var(--soft);';
     var riscoZonaHTML=riscos.length?riscos.map(function(s){return '<tr><td style="'+tdc+'"><b>'+H.SCALES[s].name+'</b> <span style="color:var(--muted);font-size:11px">('+H.SCALES[s].inv+')</span></td><td style="'+tdc+'text-align:center;white-space:nowrap;font-weight:700">'+hi[s]+' de '+N+'</td><td style="'+tdc+'color:var(--muted)">'+H.SCALES[s].risk+'</td></tr>';}).join(''):'<tr><td colspan="3" style="'+tdc+'color:var(--muted)">Nenhum risco em zona alta no time.</td></tr>';
-    var pairSim=null,pairDif=null;
-    if(N>=2){ for(var pi=0;pi<N;pi++)for(var pj=pi+1;pj<N;pj++){ var pd=H.distance(all[pi],all[pj]); if(!pairSim||pd<pairSim.d)pairSim={i:pi,j:pj,d:pd}; if(!pairDif||pd>pairDif.d)pairDif={i:pi,j:pj,d:pd}; } }
-    function simPct(d){return Math.max(0,Math.min(100,Math.round(100-d)));}
-    var simHTML = N<2 ? '<p class="lead" style="font-size:13.5px;color:var(--muted);">É necessário ao menos 2 respondentes neste conjunto para comparar perfis.</p>'
-      : '<div class="two"><div class="kard pos"><h3>Mais semelhantes</h3><p class="lead" style="font-size:14px;"><b>'+escn(people[pairSim.i].name)+'</b> ↔ <b>'+escn(people[pairSim.j].name)+'</b><br><span style="color:var(--muted);font-size:13px;">'+simPct(pairSim.d)+'% de semelhança de perfil</span></p></div>'
-        +'<div class="kard neg"><h3>Mais diferentes</h3><p class="lead" style="font-size:14px;"><b>'+escn(people[pairDif.i].name)+'</b> ↔ <b>'+escn(people[pairDif.j].name)+'</b><br><span style="color:var(--muted);font-size:13px;">'+simPct(pairDif.d)+'% de semelhança de perfil</span></p></div></div>';
 
     document.getElementById('content').innerHTML=
       '<div class="card"><div class="kpis">'
@@ -160,14 +175,16 @@
       +'</div></div>'
       +'<div class="card"><h2>Leitura do time</h2><p class="lead">'+resumo+'</p></div>'
       +'<div class="card"><h2>Distribuição por perfil</h2>'
-        +'<div class="kpis">'+archeHTML+'</div>'
-        +'<h3 style="margin-top:16px;font-size:14px;color:var(--navy);">Pessoas por risco em zona alta (&gt; 70)</h3>'
+        +'<div class="two" style="align-items:center">'
+          +'<div style="text-align:center">'+pieHTML+'</div>'
+          +'<div>'+legendHTML+'<p class="lead" style="font-size:12.5px;color:var(--muted);margin-top:8px">Perfil predominante: <b>'+domArche+'</b>. Cada fatia é a parcela do time em cada arquétipo.</p></div>'
+        +'</div>'
+        +'<h3 style="margin-top:18px;font-size:14px;color:var(--navy);">Pessoas por risco em zona alta (&gt; 70)</h3>'
         +'<table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px;"><thead><tr>'
           +'<th style="text-align:left;padding:6px 9px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);background:var(--soft);">Risco</th>'
           +'<th style="text-align:center;padding:6px 9px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);background:var(--soft);white-space:nowrap;">Em zona alta</th>'
           +'<th style="text-align:left;padding:6px 9px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);background:var(--soft);">O que significa (pontuação alta)</th>'
         +'</tr></thead><tbody>'+riscoZonaHTML+'</tbody></table></div>'
-      +'<div class="card"><h2>Perfis semelhantes e diferentes</h2>'+simHTML+'</div>'
       +'<div class="card"><h2>Estilo médio do time <span class="tag" style="background:var(--hpi)">HPI</span></h2>'+bars(H.HPI,'HPI')+'</div>'
       +'<div class="card"><h2>Riscos médios do time <span class="tag" style="background:var(--hds)">HDS</span></h2>'+bars(H.HDS,'HDS')+'</div>'
       +'<div class="card"><h2>Valores médios do time <span class="tag" style="background:var(--mvpi)">MVPI</span></h2>'+bars(H.MVPI,'MVPI')+'</div>'

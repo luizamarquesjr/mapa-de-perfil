@@ -450,7 +450,7 @@
     function ord(n){return n+'º';}
     function rankChip(rank){return '<span class="rankchip r'+Math.min(rank,3)+'">'+ord(rank)+' mais aderente</span>';}
     out+='<h3 style="margin:18px 0 4px">Demais assessores → aderência por líder (%)</h3>';
-    out+='<p class="lead" style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Para cada assessor (respeitando o filtro), a <b>aderência em %</b> com '+lids.map(function(l){return escn(l.name.split(' ')[0]);}).join(', ')+' — quanto maior, mais parecidos os perfis. O selo <span class="rankchip r1">1º mais aderente</span> marca a posição de cada líder no ranking daquele assessor. <b>Em caso de empate, a posição melhor fica com o líder atual.</b></p>';
+    out+='<p class="lead" style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Para cada assessor (respeitando o filtro), a <b>aderência em %</b> com '+lids.map(function(l){return escn(l.name.split(' ')[0]);}).join(', ')+' — quanto maior, mais parecidos os perfis. <b>Empate técnico:</b> diferenças de até <b>±2 pontos</b> contam como equivalentes. Assim, se o assessor <b>já está</b> com um líder dentro dessa faixa do topo, a recomendação é <b>manter</b> o líder atual — o que reduz trocas entre times. O selo <span class="rankchip r1">1º mais aderente</span> mostra a posição no ranking; <span class="badge keep">manter</span> sinaliza empate técnico com o líder atual.</p>';
     if(!assessores.length){ out+='<div class="warn">Nenhum assessor no conjunto filtrado (apenas líderes/gestor). Marque mais líderes no filtro.</div></div>'; return out; }
 
     function curIsLid(o){return lids.some(function(l){return norm(l.key)===norm(o.cur);});}
@@ -468,25 +468,35 @@
     function adher(o,key){var r=o.fits.filter(function(x){return x.l.key===key;})[0];return r?r.f.overall:0;}
     function rankFor(o,key){var r=o.fits.filter(function(x){return x.l.key===key;})[0];return r?r.rank:maxL;}
 
+    var TIE=2; // empate técnico: diferença de até 2 pontos
+    function recOf(o){ // líder recomendado considerando empate técnico + manter atual
+      var best=o.fits[0];
+      if(curIsLid(o)){
+        var ck=lids.filter(function(l){return norm(l.key)===norm(o.cur);})[0].key;
+        if(best.f.overall - adher(o,ck) <= TIE) return o.fits.filter(function(x){return x.l.key===ck;})[0];
+      }
+      return best;
+    }
     var keepCnt=0, moveCnt=0;
     var cards=AF.map(function(o){
-      var p=o.p, fits=o.fits, best=fits[0], cur=o.cur;
-      var already = curIsLid(o) && norm(cur)===norm(best.l.key);
-      if(already) keepCnt++; else if(curIsLid(o)) moveCnt++;
+      var p=o.p, fits=o.fits, best=fits[0], cur=o.cur, rec=recOf(o);
+      var recIsCur = curIsLid(o) && norm(rec.l.key)===norm(cur);
+      if(recIsCur) keepCnt++; else if(curIsLid(o)) moveCnt++;
       var maxv=best.f.overall||1;
       var rows=fits.map(function(r){
-        var isBest=(r.rank===1);
-        return '<div class="fitrow'+(isBest?' best':'')+'"><div class="nm">'+escn(r.l.name)+' '+rankChip(r.rank)+'</div>'
+        var isRec=(r.l.key===rec.l.key);
+        return '<div class="fitrow'+(isRec?' best':'')+'"><div class="nm">'+escn(r.l.name)+' '+rankChip(r.rank)+'</div>'
           +'<div class="fbar"><div class="ff" style="width:'+Math.round(r.f.overall/maxv*100)+'%"></div></div>'
           +'<div class="pc">'+r.f.overall+'%</div></div>';
       }).join('');
-      var badge = already
-        ? '<span class="badge keep">já é o 1º mais aderente ('+best.f.overall+'%)</span>'
-        : '<span class="badge move">1º mais aderente: '+escn(best.l.name)+' ('+best.f.overall+'%)</span>';
+      var badge = recIsCur
+        ? (rec.rank===1 ? '<span class="badge keep">já é o 1º mais aderente ('+rec.f.overall+'%)</span>'
+                        : '<span class="badge keep">manter — empate técnico com o 1º (±2%): '+rec.f.overall+'% vs '+best.f.overall+'%</span>')
+        : '<span class="badge move">sugestão: '+escn(rec.l.name)+' ('+rec.f.overall+'%)</span>';
       return '<div class="fitc"><div class="hd"><div class="who">'+escn(p.name)+'</div><div class="cur">líder atual: <b>'+escn(cur)+'</b> '+badge+'</div></div>'
-        +rows+'<p class="note">'+fitRationale(best.f,best.l.name)+'</p></div>';
+        +rows+'<p class="note">'+fitRationale(rec.f,rec.l.name)+'</p></div>';
     }).join('');
-    var resumo='<p class="note" style="margin:0 0 12px"><b>'+keepCnt+'</b> assessor(es) já estão com o líder de maior aderência; <b>'+moveCnt+'</b> (dentro do trio) teriam maior aderência com outro líder.</p>';
+    var resumo='<p class="note" style="margin:0 0 12px"><b>'+keepCnt+'</b> assessor(es) permanecem com o líder atual (maior aderência ou dentro do empate técnico de ±2%); <b>'+moveCnt+'</b> teriam maior aderência com outro líder do trio.</p>';
 
     // ---- Propostas de divisão ----
     function emptyBuckets(){var b={};lids.forEach(function(l){b[l.key]=[];});return b;}
@@ -541,7 +551,26 @@
       +renderAlloc('Proposta A · menos alterações','Mantém quem já está com um líder do trio; realoca só quem está fora do trio para o líder de maior aderência.',a1)
       +renderAlloc('Proposta B · carga equilibrada','Distribui o mais igualmente possível (~'+base+'–'+(base+(N%maxL?1:0))+' por líder), priorizando a maior aderência dentro de cada cota — para ninguém ficar sobrecarregado.',a2);
 
-    return out+resumo+cards+allocs+'</div>';
+    // ---- Ranking de líderes "coringa" (versatilidade) ----
+    var medals=['🥇','🥈','🥉'];
+    var coringa=lids.map(function(l){
+      var sum=0, top=0;
+      AF.forEach(function(o){ var a=adher(o,l.key); sum+=a; if(o.fits[0].f.overall - a <= TIE) top++; });
+      return {l:l, avg:AF.length?Math.round(sum/AF.length):0, top:top};
+    }).sort(function(a,b){return b.avg-a.avg || b.top-a.top;});
+    var maxAvg=coringa[0]?(coringa[0].avg||1):1;
+    var coringaRows=coringa.map(function(c,i){
+      return '<div class="fitrow"><div class="nm">'+(medals[i]||(i+1)+'º')+' <b>'+escn(c.l.name)+'</b></div>'
+        +'<div class="fbar"><div class="ff" style="width:'+Math.round(c.avg/maxAvg*100)+'%;background:'+(i===0?'var(--gold)':'var(--midc)')+'"></div></div>'
+        +'<div class="pc">'+c.avg+'%</div></div>'
+        +'<div style="font-size:11.5px;color:var(--muted);margin:-2px 0 10px 4px">aderência média ao time · é o mais aderente (ou empate técnico) para <b>'+c.top+'</b> de '+AF.length+' assessores</div>';
+    }).join('');
+    var coringaCard='<div class="allocwrap"><h3 class="allochd">Ranking de líderes "coringa" (versatilidade)</h3>'
+      +'<p class="lead" style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Pontuação = <b>aderência média de cada líder a todos os assessores</b> do conjunto filtrado. Quanto maior, mais o líder "encaixa" com a maioria dos perfis — o líder mais <b>coringa</b>. Útil para alocar <b>novas contratações</b> cujo perfil exato ainda não conhecemos: na dúvida, o líder no topo tende a ter boa sintonia com um perfil qualquer.</p>'
+      +coringaRows
+      +'<p class="note">Mais coringa: <b>'+escn(coringa[0].l.name)+'</b> — '+coringa[0].avg+'% de aderência média ao time.</p></div>';
+
+    return out+resumo+cards+allocs+coringaCard+'</div>';
   }
 
   // ---------- Bloco 3: painel de estatísticas / gráficos ----------
@@ -582,14 +611,6 @@
     function dimAvg(keys){return Math.round(keys.reduce(function(a,k){return a+avg[k];},0)/keys.length);}
     var dimEst=dimAvg(H.HPI),dimRis=dimAvg(H.HDS),dimVal=dimAvg(H.MVPI);
 
-    // pares mais aderentes / diferentes
-    var pairSim=null,pairDif=null;
-    if(N>=2){for(var i=0;i<N;i++)for(var j=i+1;j<N;j++){var d=H.distance(sc[i],sc[j]);if(!pairSim||d<pairSim.d)pairSim={i:i,j:j,d:d};if(!pairDif||d>pairDif.d)pairDif={i:i,j:j,d:d};}}
-    function simPct(d){return Math.max(0,Math.min(100,Math.round(100-d)));}
-    var pairHTML = N<2 ? '<p class="lead" style="font-size:13px;color:var(--muted)">É necessário ao menos 2 respondentes para comparar.</p>'
-      : '<div class="two"><div class="kard pos"><h3>Mais aderentes</h3><p class="lead"><b>'+escn(people[pairSim.i].name)+'</b> ↔ <b>'+escn(people[pairSim.j].name)+'</b><br><span style="color:var(--muted);font-size:13px">'+simPct(pairSim.d)+'% de aderência</span></p></div>'
-      +'<div class="kard neg"><h3>Mais diferentes</h3><p class="lead"><b>'+escn(people[pairDif.i].name)+'</b> ↔ <b>'+escn(people[pairDif.j].name)+'</b><br><span style="color:var(--muted);font-size:13px">'+simPct(pairDif.d)+'% de aderência</span></p></div></div>';
-
     var kpis='<div class="kpis">'
       +'<div class="kpi"><div class="v" style="font-size:18px;line-height:1.7">'+dom.k+'</div><div class="l">perfil padrão do time</div></div>'
       +'<div class="kpi"><div class="v" style="color:var(--hpi)">'+dimEst+'</div><div class="l">estilo médio (HPI)</div></div>'
@@ -607,8 +628,7 @@
         +'<div class="kard pos"><h3>Forças coletivas</h3><ul class="clean pos">'+(forcas.length?forcas.map(function(k){return '<li><b>'+H.SCALES[k].name+'</b> — média '+avg[k]+'</li>';}).join(''):'<li style="color:var(--muted)">Sem força coletiva ≥65.</li>')+'</ul></div>'
         +'<div class="kard neg"><h3>Riscos a acompanhar</h3><ul class="clean neg">'+(riscos.length?riscos.map(function(k){return '<li><b>'+H.SCALES[k].name+'</b> — '+hiCnt[k]+' de '+N+' em zona alta</li>';}).join(''):'<li style="color:var(--muted)">Nenhum risco em zona alta.</li>')+'</ul></div>'
         +'<div class="kard" style="border-top:4px solid var(--acc)"><h3 style="color:var(--acc)">Traços mais repetidos</h3><ul class="clean neu">'+repHTML+'</ul></div>'
-      +'</div></div>'
-      +'<div class="card"><h2>Perfis mais aderentes e mais diferentes</h2>'+pairHTML+'</div>';
+      +'</div></div>';
   }
 
   // ---------- Bloco 4: plano personalizado por pessoa (visão do gestor) ----------
