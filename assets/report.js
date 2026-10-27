@@ -256,12 +256,24 @@
 
     var lider = record.lider ? ' · Líder: '+esc(record.lider) : '';
 
+    // Potencial de liderança (visão do líder)
+    var lp=H.leadership(sc);
+    var lpCard='<div class="card"><h2>Potencial de liderança <span style="color:#b8860b;font-size:17px;letter-spacing:2px;">'+H.stars5(lp.stars)+'</span> <span style="font-size:12px;color:var(--muted);font-weight:400;">'+esc(lp.label)+' · '+lp.score+'/100</span></h2>'
+      +'<p class="lead" style="font-size:12.5px;">Potencial para <b>assumir uma liderança no futuro</b>. Considera as matérias-primas <b>treináveis</b> — vontade de liderar, estabilidade emocional, influência, confiabilidade, visão e orientação a resultado — e desconta os riscos que travam a liderança. Vai além de "ser parecido" com os líderes atuais.</p>'
+      +'<div class="two" style="margin-top:8px;">'
+        +'<div class="kard pos"><h3>Já joga a favor</h3><p style="font-size:12.5px;">'+(lp.drivers.length?esc(lp.drivers.join(', ')):'—')+'</p></div>'
+        +'<div class="kard"><h3>A desenvolver (treinável)</h3><p style="font-size:12.5px;">'+(lp.develop.length?esc(lp.develop.join(', ')):'nenhum ponto crítico')+'</p></div>'
+      +'</div>'
+      +(lp.watch.length?'<p style="font-size:12px;color:var(--muted);margin-top:8px;"><b>Atenção sob pressão:</b> '+esc(lp.watch.join(', '))+'.</p>':'')
+      +'</div>';
+
     return ''
       + '<div class="band" style="background:linear-gradient(125deg,#3a2f1b,#5c4a2a);"><div class="kick">Relatório gerencial · Confidencial (uso do líder)</div>'
         + '<h1>'+esc(record.name||'Respondente')+'</h1>'
         + '<div class="who">Como liderar melhor esta pessoa'+lider+'</div></div>'
       + '<div class="disc"><b>Documento de gestão — não compartilhar com o avaliado.</b> Orientações para o líder direto atuar melhor com esta pessoa, a partir do seu perfil. Ferramenta educativa; não é o Hogan Assessment.</div>'
       + '<div class="card"><h2>Retrato para o líder</h2><p class="lead" style="font-size:13px;">'+retrato+'</p></div>'
+      + lpCard
       + '<div class="card"><h2>✔ Como liderar &amp; motivar</h2><ul class="clean pos">'+motiv.join('')+'</ul>'
         + '<p style="font-size:12.5px;color:var(--muted);margin-top:10px;">'+ambTxt+'</p></div>'
       + '<div class="card"><h2>💬 Como comunicar e dar feedback</h2><ul class="clean" style="list-style:none;">'+com.join('')+'</ul></div>'

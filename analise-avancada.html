@@ -314,6 +314,7 @@
     html+=blockMedias(people);  // 1a
     html+=blockFit(people);     // aderência hierárquica
     html+=blockPainel(people);  // estatísticas/gráficos
+    html+=blockLideranca(people); // ranking de potencial de liderança (avaliador)
     html+=blockPlano(people);   // plano personalizado por pessoa (gestor)
     host.innerHTML=html;
     bindHier();
@@ -690,6 +691,33 @@
         +'<div class="kard neg"><h3>Riscos a acompanhar</h3><ul class="clean neg">'+(riscos.length?riscos.map(function(k){return '<li><b>'+H.SCALES[k].name+'</b> — '+hiCnt[k]+' de '+N+' em zona alta</li>';}).join(''):'<li style="color:var(--muted)">Nenhum risco em zona alta.</li>')+'</ul></div>'
         +'<div class="kard" style="border-top:4px solid var(--acc)"><h3 style="color:var(--acc)">Traços mais repetidos</h3><ul class="clean neu">'+repHTML+'</ul></div>'
       +'</div></div>';
+  }
+
+  // ---------- Bloco: potencial de liderança (ranking — visão do avaliador) ----------
+  function blockLideranca(people){
+    var arr=people.map(function(p){return {p:p,lp:H.leadership(SC[p.__i])};})
+      .sort(function(a,b){return b.lp.score-a.lp.score || a.p.name.localeCompare(b.p.name);});
+    var dist={1:0,2:0,3:0,4:0,5:0}; arr.forEach(function(o){dist[o.lp.stars]++;});
+    var kpis='<div class="kpis">'
+      +'<div class="kpi"><div class="v" style="color:var(--gold)">'+(dist[5]+dist[4])+'</div><div class="l">alto potencial (4–5★)</div></div>'
+      +'<div class="kpi"><div class="v">'+dist[3]+'</div><div class="l">a desenvolver (3★)</div></div>'
+      +'<div class="kpi"><div class="v">'+(dist[2]+dist[1])+'</div><div class="l">potencial inicial (1–2★)</div></div>'
+      +'<div class="kpi"><div class="v" style="font-size:18px;line-height:1.7">'+escn(arr[0].p.name.split(' ')[0])+'</div><div class="l">maior potencial</div></div>'
+      +'</div>';
+    var rows=arr.map(function(o,i){
+      var lp=o.lp;
+      var fortes=lp.drivers.slice(0,3).join(', ')||'—';
+      var risco=lp.watch.length?' <span style="color:var(--w)">· atenção: '+escn(lp.watch[0])+'</span>':'';
+      return '<tr><td class="num" style="color:var(--muted)">'+(i+1)+'</td><td><b>'+escn(o.p.name)+'</b></td><td>'+escn(o.p.lider||'Outros')+'</td>'
+        +'<td style="color:var(--gold);white-space:nowrap;letter-spacing:1px;font-weight:700">'+H.stars5(lp.stars)+'</td>'
+        +'<td class="num">'+lp.score+'</td>'
+        +'<td style="font-size:12px;color:var(--muted)">'+escn(fortes)+risco+'</td></tr>';
+    }).join('');
+    return '<div class="card"><h2>5 · Potencial de liderança — ranking do time <span class="tag" style="background:var(--gold)">avaliador/líder</span></h2>'
+      +'<p class="lead" style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Ranking de <b>potencial para assumir liderança no futuro</b> (1–5 ★). Premissas <b>amplas</b>: além de "ser parecido" com os líderes atuais (Rodolfo, Daniel, Gustavo e Junior), valoriza as <b>matérias-primas treináveis</b> — vontade de liderar, estabilidade emocional, influência, confiabilidade, visão e orientação a resultado — e desconta os riscos que travam a liderança (resistência velada, dificuldade de dizer não, indecisão, volatilidade, cinismo). Visível apenas para avaliador e líder.</p>'
+      +kpis
+      +'<table class="tbl" style="margin-top:12px"><thead><tr><th style="text-align:center">#</th><th>Respondente</th><th>Líder</th><th>Potencial</th><th style="text-align:center">Nota</th><th>Já joga a favor / atenção</th></tr></thead><tbody>'+rows+'</tbody></table>'
+      +'<p class="foot" style="margin-top:10px">★ = potencial, não desempenho atual. Alguém com nota mais baixa pode crescer com desenvolvimento dirigido nos itens "a desenvolver"; use junto da leitura qualitativa de cada perfil.</p></div>';
   }
 
   // ---------- Bloco 4: plano personalizado por pessoa (visão do gestor) ----------
