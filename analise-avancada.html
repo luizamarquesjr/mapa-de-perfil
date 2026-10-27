@@ -140,11 +140,14 @@
 <script>
 (function(){
   var H=window.HOGAN, adminKey=sessionStorage.getItem('mp_adminKey')||'';
-  var LIDERES=['Daniel','Elidio','Gustavo','Junior','Rodolfo','Outros'];
+  var LIDERES=['Daniel','Elidio','Gustavo','Junior','Rodolfo','Ville','Outros'];
   // Hierarquia desta análise
   var GESTOR_KEY='Rodolfo';
   var LIDER_KEYS=['Daniel','Junior','Gustavo'];
   var ROLES=[{key:'Rodolfo',role:'Gestor'},{key:'Daniel',role:'Líder'},{key:'Junior',role:'Líder'},{key:'Gustavo',role:'Líder'}];
+  // Regra especial: assessores de "Ville" têm a aderência comparada apenas a estes líderes
+  var VILLE_KEY='Ville';
+  var VILLE_ELIG=['Junior','Gustavo'];
   var HKEY='mp_hier_v1';
 
   function escn(x){return (x||'').toString().replace(/[<>&]/g,function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});}
@@ -450,13 +453,18 @@
     function ord(n){return n+'º';}
     function rankChip(rank){return '<span class="rankchip r'+Math.min(rank,3)+'">'+ord(rank)+' mais aderente</span>';}
     out+='<h3 style="margin:18px 0 4px">Demais assessores → aderência por líder (%)</h3>';
-    out+='<p class="lead" style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Para cada assessor (respeitando o filtro), a <b>aderência em %</b> com '+lids.map(function(l){return escn(l.name.split(' ')[0]);}).join(', ')+' — quanto maior, mais parecidos os perfis. <b>Empate técnico:</b> diferenças de até <b>±2 pontos</b> contam como equivalentes. Assim, se o assessor <b>já está</b> com um líder dentro dessa faixa do topo, a recomendação é <b>manter</b> o líder atual — o que reduz trocas entre times. O selo <span class="rankchip r1">1º mais aderente</span> mostra a posição no ranking; <span class="badge keep">manter</span> sinaliza empate técnico com o líder atual.</p>';
+    out+='<p class="lead" style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Para cada assessor (respeitando o filtro), a <b>aderência em %</b> com '+lids.map(function(l){return escn(l.name.split(' ')[0]);}).join(', ')+' — quanto maior, mais parecidos os perfis. <b>Empate técnico:</b> diferenças de até <b>±2 pontos</b> contam como equivalentes. Assim, se o assessor <b>já está</b> com um líder dentro dessa faixa do topo, a recomendação é <b>manter</b> o líder atual — o que reduz trocas entre times. O selo <span class="rankchip r1">1º mais aderente</span> mostra a posição no ranking; <span class="badge keep">manter</span> sinaliza empate técnico com o líder atual. <b>Regra especial:</b> assessores de <b>Ville</b> são comparados apenas a <b>'+VILLE_ELIG.join(' e ')+'</b>.</p>';
     if(!assessores.length){ out+='<div class="warn">Nenhum assessor no conjunto filtrado (apenas líderes/gestor). Marque mais líderes no filtro.</div></div>'; return out; }
 
     function curIsLid(o){return lids.some(function(l){return norm(l.key)===norm(o.cur);});}
+    // Regra Ville: aderência considerando apenas Junior e Gustavo
+    function lidsFor(cur){
+      if(norm(cur)===norm(VILLE_KEY)){ var e=lids.filter(function(l){return VILLE_ELIG.some(function(k){return norm(k)===norm(l.key);});}); if(e.length) return e; }
+      return lids;
+    }
     var AF=assessores.map(function(p){
       var prof=SC[p.__i], cur=p.lider||'Outros';
-      var fits=lids.map(function(l){return {l:l,f:fit(prof,l.prof)};}).sort(function(a,b){
+      var fits=lidsFor(cur).map(function(l){return {l:l,f:fit(prof,l.prof)};}).sort(function(a,b){
         if(b.f.overall!==a.f.overall) return b.f.overall-a.f.overall;
         // empate: líder atual do respondente fica na frente
         var ca=norm(a.l.key)===norm(cur), cb=norm(b.l.key)===norm(cur);
@@ -525,7 +533,7 @@
       var opts=o.fits, k=null,i;
       for(i=0;i<opts.length;i++){ if(count[opts[i].l.key]<base){k=opts[i].l.key;break;} }
       if(k===null){ for(i=0;i<opts.length;i++){ if(count[opts[i].l.key]===base&&extraLeft>0){k=opts[i].l.key;extraLeft--;break;} } }
-      if(k===null){ k=lids.slice().sort(function(a,b){return count[a.key]-count[b.key];})[0].key; }
+      if(k===null){ k=o.fits.map(function(x){return x.l.key;}).sort(function(a,b){return count[a]-count[b];})[0]; }
       a2[k].push(o); count[k]++; assigned[o.p.__i]=1;
     });
 
@@ -565,16 +573,17 @@
       if(risk.length) t+='; atenção a '+risk[0];
       return t+'.';
     }
+    function eligForLeader(lkey){ return AF.filter(function(o){return o.fits.some(function(x){return x.l.key===lkey;});}); }
     function idealSub(lkey){
       var g={}; ARCHES.forEach(function(a){g[a]={s:0,n:0};});
-      AF.forEach(function(o){ var a=H.archetype(SC[o.p.__i]).label; g[a].s+=adher(o,lkey); g[a].n++; });
+      eligForLeader(lkey).forEach(function(o){ var a=H.archetype(SC[o.p.__i]).label; g[a].s+=adher(o,lkey); g[a].n++; });
       var best=null; ARCHES.forEach(function(a){ if(g[a].n){var av=g[a].s/g[a].n; if(!best||av>best.av)best={a:a,av:Math.round(av),n:g[a].n};} });
       return best;
     }
     var coringa=lids.map(function(l){
-      var sum=0, top=0;
-      AF.forEach(function(o){ var a=adher(o,l.key); sum+=a; if(o.fits[0].f.overall - a <= TIE) top++; });
-      return {l:l, avg:AF.length?Math.round(sum/AF.length):0, top:top};
+      var elig=eligForLeader(l.key), sum=0, top=0;
+      elig.forEach(function(o){ var a=adher(o,l.key); sum+=a; if(o.fits[0].f.overall - a <= TIE) top++; });
+      return {l:l, avg:elig.length?Math.round(sum/elig.length):0, top:top, n:elig.length};
     }).sort(function(a,b){return b.avg-a.avg || b.top-a.top;});
     var maxAvg=coringa[0]?(coringa[0].avg||1):1;
     var coringaRows=coringa.map(function(c,i){
@@ -582,7 +591,7 @@
       return '<div class="fitrow"><div class="nm">'+(medals[i]||(i+1)+'º')+' <b>'+escn(c.l.name)+'</b></div>'
         +'<div class="fbar"><div class="ff" style="width:'+Math.round(c.avg/maxAvg*100)+'%;background:'+(i===0?'var(--gold)':'var(--midc)')+'"></div></div>'
         +'<div class="pc">'+c.avg+'%</div></div>'
-        +'<div style="font-size:11.5px;color:var(--muted);margin:-2px 0 3px 4px">aderência média ao time · é o mais aderente (ou empate técnico) para <b>'+c.top+'</b> de '+AF.length+' assessores</div>'
+        +'<div style="font-size:11.5px;color:var(--muted);margin:-2px 0 3px 4px">aderência média ao time · é o mais aderente (ou empate técnico) para <b>'+c.top+'</b> de '+c.n+' assessores</div>'
         +'<div style="font-size:11.5px;color:var(--ink);margin:0 0 2px 4px">'+leaderProfile(c.l.prof)+'</div>'
         +'<div style="font-size:11.5px;color:var(--acc);margin:0 0 14px 4px"><b>Liderado ideal:</b> perfil '+(ids?ids.a:'—')+(ids?' (aderência média '+ids.av+'% neste time)':'')+' — priorize esse perfil em novas contratações sob '+escn(c.l.name.split(' ')[0])+'.</div>';
     }).join('');
