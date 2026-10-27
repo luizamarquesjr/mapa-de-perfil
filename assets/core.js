@@ -480,30 +480,41 @@
   // confiabilidade, visão e orientação a resultado — descontando riscos que travam a
   // liderança (resistência velada, subserviência, indecisão, volatilidade, cinismo).
   function leadership(scores){
-    function av(a){var s=0,n=0;a.forEach(function(x){if(scores[x]!=null){s+=scores[x];n++;}});return n?s/n:0;}
+    function g(k){return scores[k]!=null?scores[k]:50;}
+    function av(a){var s=0,n=0;a.forEach(function(x){if(scores[x]!=null){s+=scores[x];n++;}});return n?s/n:50;}
+    // Premissa: liderar é um ato de ALTRUÍSMO — o líder desenvolve pessoas e cria
+    // pertencimento, e ao mesmo tempo faz o time EMPREENDER. O lado "desenvolver/cuidar"
+    // pesa mais; o lado "empreender/visão" complementa; riscos descontam.
     var comp={
-      drive:      av(['AMB','POD']),   // vontade de liderar / influência
-      stability:  scores.AJU!=null?scores.AJU:50, // estabilidade emocional
-      people:     av(['SOC','SEN']),   // mobilizar e se relacionar
-      reliability:scores.PRU!=null?scores.PRU:50, // confiabilidade / disciplina
-      vision:     scores.INQ!=null?scores.INQ:50, // visão estratégica
-      business:   scores.COM!=null?scores.COM:50  // orientação a resultado
+      altruismo:     g('ALT'),            // servir e desenvolver os liderados
+      pertencimento: g('AFI'),            // afiliação / senso de grupo
+      sensibilidade: g('SEN'),            // ler e cuidar das pessoas
+      confiabilidade:g('PRU'),            // método, disciplina, exemplo
+      seguranca:     g('SEG'),            // dá estabilidade/previsibilidade ao time
+      tradicao:      g('TRA'),            // coerência de valores
+      visao:         av(['IMA','INQ']),   // criatividade e visão para desenvolver
+      ambicao:       g('AMB'),            // faz o time empreender / querer mais
+      comercial:     g('COM'),            // orientação a resultado e negócio
+      influencia:    g('POD'),            // influência / tomar a frente
+      equilibrio:    g('AJU')             // estabilidade emocional sob pressão
     };
-    var W={drive:0.22,stability:0.20,people:0.18,reliability:0.15,vision:0.13,business:0.12};
+    // pesos somam 1,00 — bloco "desenvolver pessoas" (altruísmo+pertencimento+sensibilidade
+    // +confiabilidade+segurança+tradição) = 0,63 do positivo
+    var W={altruismo:0.16,pertencimento:0.12,sensibilidade:0.11,confiabilidade:0.09,seguranca:0.08,tradicao:0.07,
+           visao:0.08,ambicao:0.10,comercial:0.08,influencia:0.05,equilibrio:0.06};
     var pos=0; for(var k in W){ pos+=W[k]*comp[k]; }
-    // riscos que travam a liderança (quanto maior, mais penaliza — só acima do moderado)
+    // riscos que travam a liderança — critério exigente (penaliza a partir de 35, íngreme)
     var derail=av(['PAS','OBS','CAU','TEM','CET']);
-    var penalty=Math.max(0,(derail-40))*0.30;
-    if(scores.ARR>80) penalty+=(scores.ARR-80)*0.20; // excesso de arrogância
+    var penalty=Math.max(0,(derail-35))*0.40;
+    if(scores.ARR>75) penalty+=(scores.ARR-75)*0.25;
     var score=Math.max(0,Math.min(100,Math.round(pos-penalty)));
-    var stars=score>=78?5:score>=64?4:score>=50?3:score>=36?2:1;
+    var stars=score>=80?5:score>=72?4:score>=57?3:score>=46?2:1;
     var LAB={5:'Pronto para liderar',4:'Alto potencial',3:'Potencial a desenvolver',2:'Potencial inicial',1:'Baixo potencial atual'};
-    var NM={drive:'Vontade de liderar',stability:'Estabilidade emocional',people:'Influência e relação',reliability:'Confiabilidade e disciplina',vision:'Visão estratégica',business:'Orientação a resultado'};
-    var drivers=[],develop=[];
-    Object.keys(NM).forEach(function(k){ if(comp[k]>=65) drivers.push(NM[k]); else if(comp[k]<50) develop.push(NM[k]); });
+    var NM={altruismo:'Altruísmo (servir e desenvolver)',pertencimento:'Pertencimento e afiliação',sensibilidade:'Sensibilidade interpessoal',confiabilidade:'Confiabilidade e disciplina',seguranca:'Dá estabilidade ao time',tradicao:'Coerência de valores',visao:'Visão e criatividade',ambicao:'Faz empreender (ambição)',comercial:'Orientação comercial',influencia:'Influência',equilibrio:'Equilíbrio emocional'};
+    var drivers=[],develop=[], ordered=Object.keys(W).sort(function(a,b){return W[b]-W[a];});
+    ordered.forEach(function(k){ if(comp[k]>=65) drivers.push(NM[k]); else if(comp[k]<50) develop.push(NM[k]); });
     var WATCH={PAS:'Resistência velada',OBS:'Dificuldade de dizer não',CAU:'Indecisão',TEM:'Volatilidade emocional',CET:'Cinismo/desconfiança',ARR:'Excesso de autoconfiança'};
     var watch=['PAS','OBS','CAU','TEM','CET','ARR'].filter(function(k){return scores[k]>70;}).map(function(k){return WATCH[k];});
-    drivers.sort(function(a,b){return 0;});
     return {score:score, stars:stars, label:LAB[stars], comp:comp, drivers:drivers, develop:develop, watch:watch};
   }
   function stars5(n){ var s=''; for(var i=1;i<=5;i++) s+=(i<=n?'★':'☆'); return s; }

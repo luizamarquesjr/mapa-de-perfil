@@ -259,7 +259,7 @@
     // Potencial de liderança (visão do líder)
     var lp=H.leadership(sc);
     var lpCard='<div class="card"><h2>Potencial de liderança <span style="color:#b8860b;font-size:17px;letter-spacing:2px;">'+H.stars5(lp.stars)+'</span> <span style="font-size:12px;color:var(--muted);font-weight:400;">'+esc(lp.label)+' · '+lp.score+'/100</span></h2>'
-      +'<p class="lead" style="font-size:12.5px;">Potencial para <b>assumir uma liderança no futuro</b>. Considera as matérias-primas <b>treináveis</b> — vontade de liderar, estabilidade emocional, influência, confiabilidade, visão e orientação a resultado — e desconta os riscos que travam a liderança. Vai além de "ser parecido" com os líderes atuais.</p>'
+      +'<p class="lead" style="font-size:12.5px;">Potencial para <b>liderar e desenvolver pessoas</b>. Premissa central: <b>liderar é um ato de altruísmo</b> — pesam mais <b>altruísmo, pertencimento, sensibilidade, segurança, tradição e confiabilidade</b> (o lado que forma e cuida), somados à capacidade de fazer o time <b>empreender</b> (ambição, orientação comercial e visão). Os riscos que travam a liderança descontam a nota. Critério exigente: só perfis completos chegam a 5★.</p>'
       +'<div class="two" style="margin-top:8px;">'
         +'<div class="kard pos"><h3>Já joga a favor</h3><p style="font-size:12.5px;">'+(lp.drivers.length?esc(lp.drivers.join(', ')):'—')+'</p></div>'
         +'<div class="kard"><h3>A desenvolver (treinável)</h3><p style="font-size:12.5px;">'+(lp.develop.length?esc(lp.develop.join(', ')):'nenhum ponto crítico')+'</p></div>'
