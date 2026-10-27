@@ -580,10 +580,14 @@
       var best=null; ARCHES.forEach(function(a){ if(g[a].n){var av=g[a].s/g[a].n; if(!best||av>best.av)best={a:a,av:Math.round(av),n:g[a].n};} });
       return best;
     }
+    // centro do time (média dos assessores) para a "centralidade" do líder
+    var centroid={}; H.ORDER.forEach(function(k){centroid[k]=assessores.reduce(function(s,p){return s+SC[p.__i][k];},0)/(assessores.length||1);});
+    function distCentro(prof){var s=0;H.ORDER.forEach(function(k){s+=Math.abs(prof[k]-centroid[k]);});return s/H.ORDER.length;}
+    function marcCount(prof){return H.ORDER.filter(function(k){return prof[k]<30||prof[k]>70;}).length;}
     var coringa=lids.map(function(l){
       var elig=eligForLeader(l.key), sum=0, top=0;
       elig.forEach(function(o){ var a=adher(o,l.key); sum+=a; if(o.fits[0].f.overall - a <= TIE) top++; });
-      return {l:l, avg:elig.length?Math.round(sum/elig.length):0, top:top, n:elig.length};
+      return {l:l, avg:elig.length?Math.round(sum/elig.length):0, top:top, n:elig.length, cen:Math.round(100-distCentro(l.prof)), marc:marcCount(l.prof)};
     }).sort(function(a,b){return b.avg-a.avg || b.top-a.top;});
     var maxAvg=coringa[0]?(coringa[0].avg||1):1;
     var coringaRows=coringa.map(function(c,i){
@@ -591,16 +595,43 @@
       return '<div class="fitrow"><div class="nm">'+(medals[i]||(i+1)+'º')+' <b>'+escn(c.l.name)+'</b></div>'
         +'<div class="fbar"><div class="ff" style="width:'+Math.round(c.avg/maxAvg*100)+'%;background:'+(i===0?'var(--gold)':'var(--midc)')+'"></div></div>'
         +'<div class="pc">'+c.avg+'%</div></div>'
-        +'<div style="font-size:11.5px;color:var(--muted);margin:-2px 0 3px 4px">aderência média ao time · é o mais aderente (ou empate técnico) para <b>'+c.top+'</b> de '+c.n+' assessores</div>'
+        +'<div style="font-size:11.5px;color:var(--muted);margin:-2px 0 3px 4px">aderência média ao time · mais aderente (ou empate técnico) para <b>'+c.top+'</b> de '+c.n+' · <b>centralidade '+c.cen+'</b> (proximidade do centro do time) · <b>'+c.marc+'</b> traços marcantes</div>'
         +'<div style="font-size:11.5px;color:var(--ink);margin:0 0 2px 4px">'+leaderProfile(c.l.prof)+'</div>'
         +'<div style="font-size:11.5px;color:var(--acc);margin:0 0 14px 4px"><b>Liderado ideal:</b> perfil '+(ids?ids.a:'—')+(ids?' (aderência média '+ids.av+'% neste time)':'')+' — priorize esse perfil em novas contratações sob '+escn(c.l.name.split(' ')[0])+'.</div>';
     }).join('');
     var coringaCard='<div class="allocwrap"><h3 class="allochd">Ranking de líderes "coringa" (versatilidade)</h3>'
-      +'<p class="lead" style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Pontuação = <b>aderência média de cada líder a todos os assessores</b> do conjunto filtrado. Quanto maior, mais o líder "encaixa" com a maioria dos perfis — o líder mais <b>coringa</b>. Útil para alocar <b>novas contratações</b> cujo perfil exato ainda não conhecemos. <span style="color:var(--muted)">Um assessor pode contar para mais de um líder quando há empate técnico (±2%) entre eles, então os totais podem somar mais que o nº de assessores.</span></p>'
+      +'<p class="lead" style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Pontuação = <b>aderência média de cada líder a todos os assessores</b>. <b>Centralidade</b> (0–100) mede o quanto o perfil do líder está próximo do centro do time: alta = encaixa com a maioria (coringa). <span style="color:var(--muted)">Empate técnico (±2%) pode fazer os totais somarem mais que o nº de assessores.</span></p>'
       +coringaRows
-      +'<p class="note">Mais coringa: <b>'+escn(coringa[0].l.name)+'</b> — '+coringa[0].avg+'% de aderência média ao time.</p></div>';
+      +'<p class="note">Mais coringa: <b>'+escn(coringa[0].l.name)+'</b> — '+coringa[0].avg+'% de aderência média · centralidade '+coringa[0].cen+'.</p>'
+      +'<div class="kard" style="border-top:4px solid var(--gold);background:#fbf7ee;margin-top:6px"><h3 style="color:var(--gold)">Traços marcantes são uma força — leia por dois ângulos</h3>'
+        +'<ul class="clean" style="margin-top:2px"><li><b>Agregar os parecidos:</b> um líder com perfil marcante <b>atrai, engaja e retém</b> liderados com o mesmo DNA — forte identificação e sintonia.</li>'
+        +'<li><b>Formar os opostos:</b> esse mesmo líder <b>desenvolve melhor</b> quem está no <b>extremo oposto</b> da escala, por complementaridade — ensina o que ao outro falta.</li></ul>'
+        +'<p class="note" style="margin-top:4px">Resumindo: alta <b>centralidade</b> = perfil <b>coringa</b> (versátil); muitos <b>traços marcantes</b> = perfil <b>formador/especialista</b>. São papéis diferentes e complementares — nenhum é melhor que o outro.</p></div></div>';
 
-    return out+resumo+cards+allocs+coringaCard+'</div>';
+    // ---- Divisão dos respondentes de Ville (~50/50 entre Junior e Gustavo) ----
+    var villeCard='';
+    var villeAF=AF.filter(function(o){return norm(o.cur)===norm(VILLE_KEY);});
+    var jrL=lids.filter(function(l){return norm(l.key)===norm('Junior');})[0];
+    var guL=lids.filter(function(l){return norm(l.key)===norm('Gustavo');})[0];
+    if(villeAF.length && jrL && guL){
+      var cap=Math.ceil(villeAF.length/2);
+      var vb={}; vb[jrL.key]=[]; vb[guL.key]=[]; var vc={}; vc[jrL.key]=0; vc[guL.key]=0;
+      var ranked=villeAF.map(function(o){var aj=adher(o,jrL.key),ag=adher(o,guL.key);return {o:o,pref:(aj>=ag?jrL.key:guL.key),gap:Math.abs(aj-ag)};}).sort(function(a,b){return b.gap-a.gap;});
+      ranked.forEach(function(r){ var first=r.pref, other=(first===jrL.key?guL.key:jrL.key); var k=(vc[first]<cap)?first:other; vb[k].push(r.o); vc[k]++; });
+      function vcol(l){
+        var items=vb[l.key].slice().sort(function(a,b){return adher(b,l.key)-adher(a,l.key);}).map(function(o){
+          var adhH=adher(o,l.key); var aj=adher(o,jrL.key),ag=adher(o,guL.key); var moved=((aj>=ag?jrL.key:guL.key)!==l.key);
+          return '<li><b>'+escn(o.p.name)+'</b> <span style="color:var(--navy);font-weight:800">'+adhH+'%</span>'+(moved?' <span class="badge move" style="font-size:9px;padding:1px 6px">equilíbrio</span>':' <span class="badge keep" style="font-size:9px;padding:1px 6px">1ª opção</span>')+'</li>';
+        }).join('')||'<li style="color:var(--muted)">—</li>';
+        return '<div class="kard"><h3>'+escn(l.name)+' <span style="color:var(--muted);font-weight:600">('+vb[l.key].length+')</span></h3><ul class="clean">'+items+'</ul></div>';
+      }
+      villeCard='<div class="allocwrap"><h3 class="allochd">Divisão dos respondentes de Ville</h3>'
+        +'<p class="lead" style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Os <b>'+villeAF.length+'</b> assessores de <b>Ville</b> divididos entre <b>'+escn(jrL.name.split(' ')[0])+'</b> e <b>'+escn(guL.name.split(' ')[0])+'</b>, buscando uma divisão <b>o mais próxima de 50/50</b> e, dentro disso, a maior aderência. <span class="badge keep" style="font-size:9px;padding:1px 6px">1ª opção</span> = foi para o de maior aderência; <span class="badge move" style="font-size:9px;padding:1px 6px">equilíbrio</span> = realocado para equilibrar a carga.</p>'
+        +'<div class="two">'+vcol(jrL)+vcol(guL)+'</div>'
+        +'<p class="note">Divisão: <b>'+vb[jrL.key].length+'</b> para '+escn(jrL.name.split(' ')[0])+' · <b>'+vb[guL.key].length+'</b> para '+escn(guL.name.split(' ')[0])+'.</p></div>';
+    }
+
+    return out+resumo+cards+allocs+coringaCard+villeCard+'</div>';
   }
 
   // ---------- Bloco 3: painel de estatísticas / gráficos ----------
