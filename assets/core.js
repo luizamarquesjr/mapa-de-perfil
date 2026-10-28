@@ -482,40 +482,40 @@
   function leadership(scores){
     function g(k){return scores[k]!=null?scores[k]:50;}
     function av(a){var s=0,n=0;a.forEach(function(x){if(scores[x]!=null){s+=scores[x];n++;}});return n?s/n:50;}
-    // Premissa: liderar é um ato de ALTRUÍSMO — o líder desenvolve pessoas e cria
-    // pertencimento, e ao mesmo tempo faz o time EMPREENDER. O lado "desenvolver/cuidar"
-    // pesa mais; o lado "empreender/visão" complementa; riscos descontam.
-    var comp={
-      altruismo:     g('ALT'),            // servir e desenvolver os liderados
-      pertencimento: g('AFI'),            // afiliação / senso de grupo
-      sensibilidade: g('SEN'),            // ler e cuidar das pessoas
-      confiabilidade:g('PRU'),            // método, disciplina, exemplo
-      seguranca:     g('SEG'),            // dá estabilidade/previsibilidade ao time
-      tradicao:      g('TRA'),            // coerência de valores
-      visao:         av(['IMA','INQ']),   // criatividade e visão para desenvolver
-      ambicao:       g('AMB'),            // faz o time empreender / querer mais
-      comercial:     g('COM'),            // orientação a resultado e negócio
-      influencia:    g('POD'),            // influência / tomar a frente
-      equilibrio:    g('AJU')             // estabilidade emocional sob pressão
+    // ===== Modelo baseado em evidência (Big Five / Judge et al. 2002 + Zenger Folkman) =====
+    // Extroversão e Conscienciosidade são os maiores preditores; Abertura e Estabilidade
+    // vêm a seguir; Amabilidade (ser cordial/altruísta) é o mais fraco SOZINHO (passividade/
+    // conformidade) — necessária para desenvolver pessoas, mas não suficiente. Diferenciais
+    // (Zenger 2020): Tomar decisões e Correr riscos; e as competências funcionam JUNTAS
+    // (um pilar fraco derruba). Critério exigente e penalização de riscos/baixa dedicação.
+    var P={
+      extroversao: 0.40*g('AMB')+0.30*g('POD')+0.30*g('SOC'),   // iniciativa, influência, presença
+      conscienciosidade: g('PRU'),                              // disciplina, execução
+      abertura: av(['INQ','IMA']),                              // criatividade, visão
+      estabilidade: g('AJU'),                                   // resiliência emocional
+      desenvolver: av(['ALT','SEN','AFI']),                     // empatia + altruísmo + pertencimento
+      decisao: 0.6*(100-g('CAU'))+0.4*(100-g('SEG'))            // decidir + apetite a risco
     };
-    // pesos somam 1,00 — bloco "desenvolver pessoas" (altruísmo+pertencimento+sensibilidade
-    // +confiabilidade+segurança+tradição) = 0,63 do positivo
-    var W={altruismo:0.16,pertencimento:0.12,sensibilidade:0.11,confiabilidade:0.09,seguranca:0.08,tradicao:0.07,
-           visao:0.08,ambicao:0.10,comercial:0.08,influencia:0.05,equilibrio:0.06};
-    var pos=0; for(var k in W){ pos+=W[k]*comp[k]; }
-    // riscos que travam a liderança — critério exigente (penaliza a partir de 35, íngreme)
-    var derail=av(['PAS','OBS','CAU','TEM','CET']);
-    var penalty=Math.max(0,(derail-35))*0.40;
-    if(scores.ARR>75) penalty+=(scores.ARR-75)*0.25;
+    var W={extroversao:0.25,conscienciosidade:0.16,abertura:0.19,estabilidade:0.12,desenvolver:0.15,decisao:0.13};
+    var pos=0; for(var pk in W){ pos+=W[pk]*P[pk]; }
+    // equilíbrio: pilar central mais fraco derruba (competências funcionam juntas)
+    var core=[P.extroversao,P.conscienciosidade,P.abertura,P.estabilidade,P.desenvolver];
+    var mn=Math.min.apply(null,core);
+    var penalty=(mn<52?(52-mn)*0.40:0);
+    // baixa dedicação / conforto (Hedonismo) e riscos de descarrilamento
+    if(g('HED')>65) penalty+=(g('HED')-65)*0.30;
+    penalty+=Math.max(0,av(['PAS','OBS','TEM','CET'])-45)*0.20;
+    if(g('ARR')>75) penalty+=(g('ARR')-75)*0.25;
     var score=Math.max(0,Math.min(100,Math.round(pos-penalty)));
-    var stars=score>=80?5:score>=72?4:score>=57?3:score>=46?2:1;
+    var stars=score>=80?5:score>=70?4:score>=57?3:score>=44?2:1;
     var LAB={5:'Pronto para liderar',4:'Alto potencial',3:'Potencial a desenvolver',2:'Potencial inicial',1:'Baixo potencial atual'};
-    var NM={altruismo:'Altruísmo (servir e desenvolver)',pertencimento:'Pertencimento e afiliação',sensibilidade:'Sensibilidade interpessoal',confiabilidade:'Confiabilidade e disciplina',seguranca:'Dá estabilidade ao time',tradicao:'Coerência de valores',visao:'Visão e criatividade',ambicao:'Faz empreender (ambição)',comercial:'Orientação comercial',influencia:'Influência',equilibrio:'Equilíbrio emocional'};
+    var NM={extroversao:'Extroversão e presença (iniciativa, influência)',conscienciosidade:'Conscienciosidade (disciplina, execução)',abertura:'Abertura e criatividade (visão)',estabilidade:'Estabilidade emocional',desenvolver:'Desenvolver pessoas (empatia, altruísmo)',decisao:'Decisão e apetite a risco'};
     var drivers=[],develop=[], ordered=Object.keys(W).sort(function(a,b){return W[b]-W[a];});
-    ordered.forEach(function(k){ if(comp[k]>=65) drivers.push(NM[k]); else if(comp[k]<50) develop.push(NM[k]); });
+    ordered.forEach(function(k){ if(P[k]>=65) drivers.push(NM[k]); else if(P[k]<50) develop.push(NM[k]); });
     var WATCH={PAS:'Resistência velada',OBS:'Dificuldade de dizer não',CAU:'Indecisão',TEM:'Volatilidade emocional',CET:'Cinismo/desconfiança',ARR:'Excesso de autoconfiança'};
     var watch=['PAS','OBS','CAU','TEM','CET','ARR'].filter(function(k){return scores[k]>70;}).map(function(k){return WATCH[k];});
-    return {score:score, stars:stars, label:LAB[stars], comp:comp, drivers:drivers, develop:develop, watch:watch};
+    if(g('HED')>80) watch.push('Prioriza conforto (baixa dedicação)');
+    return {score:score, stars:stars, label:LAB[stars], comp:P, drivers:drivers, develop:develop, watch:watch};
   }
   function stars5(n){ var s=''; for(var i=1;i<=5;i++) s+=(i<=n?'★':'☆'); return s; }
 
