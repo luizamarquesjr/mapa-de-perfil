@@ -519,6 +519,17 @@
   }
   function stars5(n){ var s=''; for(var i=1;i<=5;i++) s+=(i<=n?'★':'☆'); return s; }
 
+  // Aplica um ajuste manual do avaliador/gestor sobre o resultado do modelo.
+  // ovr = {stars:1..5, note, by}. Mantém a nota do modelo em .autoStars.
+  function applyOverride(lp, ovr){
+    if(!lp || !ovr || ovr.stars==null) return lp;
+    var s=Math.max(1,Math.min(5, Math.round(+ovr.stars)));
+    var LAB={5:'Pronto para liderar',4:'Alto potencial',3:'Potencial a desenvolver',2:'Potencial inicial',1:'Baixo potencial atual'};
+    return {score:lp.score, autoStars:lp.stars, stars:s, label:LAB[s], comp:lp.comp,
+            drivers:lp.drivers, develop:lp.develop, watch:lp.watch,
+            overridden:true, note:(ovr.note||''), by:(ovr.by||'')};
+  }
+
   // ---- Codificação para transporte (unicode-safe base64) ---------------
   function enc(obj){ return btoa(unescape(encodeURIComponent(JSON.stringify(obj)))); }
   function dec(s){ return JSON.parse(decodeURIComponent(escape(atob(s)))); }
@@ -527,7 +538,7 @@
     C:C, SCALES:SCALES, ITEMS:ITEMS, ORDER:ORDER,
     HPI:HPI_ORDER, HDS:HDS_ORDER, MVPI:MVPI_ORDER,
     shuffledItems:shuffledItems, score:score, band:band, analyze:analyze,
-    archetype:archetype, distance:distance, leadership:leadership, stars5:stars5,
+    archetype:archetype, distance:distance, leadership:leadership, stars5:stars5, applyOverride:applyOverride,
     enc:enc, dec:dec,
     LIKERT:['Discordo totalmente','Discordo','Neutro','Concordo','Concordo totalmente'],
     VERSION:1

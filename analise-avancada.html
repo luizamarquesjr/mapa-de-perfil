@@ -135,8 +135,8 @@
 </div>
 
 <script src="assets/config.js"></script>
-<script src="assets/core.js?v=3"></script>
-<script src="assets/api.js"></script>
+<script src="assets/core.js?v=4"></script>
+<script src="assets/api.js?v=4"></script>
 <script>
 (function(){
   var H=window.HOGAN, adminKey=sessionStorage.getItem('mp_adminKey')||'';
@@ -160,6 +160,7 @@
   document.getElementById('enter').onclick=function(){var k=document.getElementById('keyin').value.trim();if(!k)return;adminKey=k;sessionStorage.setItem('mp_adminKey',k);document.getElementById('gate').style.display='none';document.getElementById('content').innerHTML='<div class="card empty">Carregando...</div>';load();};
 
   var ALL=[], SC={}, selected={};
+  var OVR={}, OVR_ALL=[]; // ajustes manuais de liderança: mapa targetId->ajuste e lista completa p/ limpeza
 
   function load(){
     if(!(window.API&&API.configured())){document.getElementById('content').innerHTML='<div class="card empty">Backend não configurado (assets/config.js).</div>';return;}
@@ -167,8 +168,59 @@
       if(!res||!res.ok){document.getElementById('content').innerHTML='<div class="card empty">Erro: '+((res&&res.error)||'sem resposta')+'</div>';return;}
       ALL=(res.people||[]).map(function(p,i){p.__i=i;return p;});
       ALL.forEach(function(p){SC[p.__i]=H.score(p.answers);});
+      OVR=res.overrides||{}; OVR_ALL=res.overrideAll||[];
       setupFilter(); setupHier(); document.getElementById('foot').style.display='block'; draw();
     }).catch(function(){document.getElementById('content').innerHTML='<div class="card empty">Falha de conexão.</div>';});
+  }
+
+  // Resultado de liderança já com o ajuste manual aplicado (se houver).
+  function lpOf(p){ var lp=H.leadership(SC[p.__i]); var o=OVR[p.id]; return o?H.applyOverride(lp,o):lp; }
+
+  // ---------- Ajuste manual do avaliador ----------
+  var ovrEdit=null; // targetId em edição
+  window.__ovrOpen=function(id){ ovrEdit=id; draw(); setTimeout(function(){var n=document.getElementById('ovr_note');if(n)n.focus();},30); };
+  window.__ovrCancel=function(){ ovrEdit=null; draw(); };
+  window.__ovrSave=function(id){
+    var starsEl=document.querySelector('input[name="ovr_stars"]:checked');
+    var stars=(starsEl&&starsEl.value!=='')?+starsEl.value:null; // null => sem ajuste (usa modelo)
+    var note=(document.getElementById('ovr_note')||{}).value||'';
+    var by=(document.getElementById('ovr_by')||{}).value||'';
+    var p=ALL.filter(function(x){return x.id===id;})[0];
+    var tName=p?p.name:'';
+    var stale=OVR_ALL.filter(function(e){return e.targetId===id;}).map(function(e){return e.ovrId;});
+    var btn=document.getElementById('ovr_savebtn'); if(btn){btn.disabled=true;btn.textContent='Salvando...';}
+    function finish(){
+      // remove versões antigas do mesmo alvo
+      var dels=stale.map(function(oid){return API.remove(oid,adminKey).catch(function(){});});
+      Promise.all(dels).then(function(){ ovrEdit=null; load(); });
+    }
+    if(stars==null){
+      // "sem ajuste": apenas apaga os ajustes existentes do alvo
+      if(!stale.length){ ovrEdit=null; draw(); return; }
+      finish();
+    } else {
+      API.saveOverride({targetId:id,targetName:tName,stars:stars,note:note,by:by})
+        .then(function(r){ if(r&&r.ok){ finish(); } else { alert('Falha ao salvar o ajuste.'); if(btn){btn.disabled=false;btn.textContent='Salvar ajuste';} } })
+        .catch(function(){ alert('Falha de conexão ao salvar.'); if(btn){btn.disabled=false;btn.textContent='Salvar ajuste';} });
+    }
+  };
+  function ovrEditorRow(p, lp, cols){
+    var cur=OVR[p.id];
+    var curStars=cur?cur.stars:null;
+    var opts='';
+    for(var v=5;v>=1;v--){ opts+='<label style="cursor:pointer;margin-right:10px;white-space:nowrap"><input type="radio" name="ovr_stars" value="'+v+'"'+(curStars===v?' checked':'')+'> '+H.stars5(v)+'</label>'; }
+    opts+='<label style="cursor:pointer;white-space:nowrap"><input type="radio" name="ovr_stars" value="" '+(curStars==null?' checked':'')+'> sem ajuste (usar modelo: '+H.stars5(cur?lp.autoStars:lp.stars)+')</label>';
+    return '<tr class="ovr-edit"><td></td><td colspan="'+(cols-1)+'" style="background:#faf7f1;border-radius:0 0 8px 8px;padding:12px 14px">'
+      +'<div style="font-size:12px;font-weight:800;color:#5c4a2a;margin-bottom:8px">Ajuste manual do avaliador — '+escn(p.name)+'</div>'
+      +'<div style="margin-bottom:9px;font-size:13px">'+opts+'</div>'
+      +'<textarea id="ovr_note" placeholder="Justificativa comportamental (ex.: baixa dedicação, procrastinação, pouco engajamento observado...)" style="width:100%;min-height:52px;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit;font-size:12.5px">'+escn(cur?cur.note:'')+'</textarea>'
+      +'<div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap">'
+        +'<input id="ovr_by" placeholder="Avaliador (opcional)" value="'+escn(cur?cur.by:'')+'" style="border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:12.5px;font-family:inherit;flex:1;min-width:160px">'
+        +'<button id="ovr_savebtn" class="btn" style="background:#5c4a2a;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer" onclick="__ovrSave(\''+p.id+'\')">Salvar ajuste</button>'
+        +'<button class="btn" style="background:#fff;color:#5c4a2a;border:1.5px solid var(--line);border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer" onclick="__ovrCancel()">Cancelar</button>'
+      +'</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-top:7px">O ajuste substitui a estrela do modelo nas visões de avaliador e líder (relatório gerencial). Não aparece no relatório individual do avaliado.</div>'
+      +'</td></tr>';
   }
 
   // ---------- Filtro multi-seleção ----------
@@ -695,9 +747,11 @@
 
   // ---------- Bloco: potencial de liderança (ranking — visão do avaliador) ----------
   function blockLideranca(people){
-    var arr=people.map(function(p){return {p:p,lp:H.leadership(SC[p.__i])};})
-      .sort(function(a,b){return b.lp.score-a.lp.score || a.p.name.localeCompare(b.p.name);});
+    var COLS=7;
+    var arr=people.map(function(p){return {p:p,lp:lpOf(p)};})
+      .sort(function(a,b){return b.lp.stars-a.lp.stars || b.lp.score-a.lp.score || a.p.name.localeCompare(b.p.name);});
     var dist={1:0,2:0,3:0,4:0,5:0}; arr.forEach(function(o){dist[o.lp.stars]++;});
+    var nAdj=arr.filter(function(o){return o.lp.overridden;}).length;
     var kpis='<div class="kpis">'
       +'<div class="kpi"><div class="v" style="color:var(--gold)">'+(dist[5]+dist[4])+'</div><div class="l">alto potencial (4–5★)</div></div>'
       +'<div class="kpi"><div class="v">'+dist[3]+'</div><div class="l">a desenvolver (3★)</div></div>'
@@ -708,16 +762,23 @@
       var lp=o.lp;
       var fortes=lp.drivers.slice(0,3).join(', ')||'—';
       var risco=lp.watch.length?' <span style="color:var(--w)">· atenção: '+escn(lp.watch[0])+'</span>':'';
-      return '<tr><td class="num" style="color:var(--muted)">'+(i+1)+'</td><td><b>'+escn(o.p.name)+'</b></td><td>'+escn(o.p.lider||'Outros')+'</td>'
-        +'<td style="color:var(--gold);white-space:nowrap;letter-spacing:1px;font-weight:700">'+H.stars5(lp.stars)+'</td>'
-        +'<td class="num">'+lp.score+'</td>'
-        +'<td style="font-size:12px;color:var(--muted)">'+escn(fortes)+risco+'</td></tr>';
+      var starsCell=lp.overridden
+        ? '<span style="color:#5c4a2a;letter-spacing:1px">'+H.stars5(lp.stars)+'</span> <span title="ajuste do gestor" style="font-size:9px;font-weight:800;color:#fff;background:#5c4a2a;padding:1px 5px;border-radius:4px;vertical-align:middle">AJUSTE</span><br><span style="font-size:10px;color:var(--muted)">modelo: '+H.stars5(lp.autoStars)+'</span>'
+        : '<span style="color:var(--gold);letter-spacing:1px">'+H.stars5(lp.stars)+'</span>';
+      var noteLine=lp.overridden&&lp.note?'<br><span style="font-size:10.5px;color:#5c4a2a">↳ '+escn(lp.note)+(lp.by?' — '+escn(lp.by):'')+'</span>':'';
+      var editBtn='<button class="btn" style="background:#fff;color:#5c4a2a;border:1px solid var(--line);border-radius:7px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer" onclick="__ovrOpen(\''+o.p.id+'\')">'+(lp.overridden?'editar':'ajustar')+'</button>';
+      var mainRow='<tr><td class="num" style="color:var(--muted)">'+(i+1)+'</td><td><b>'+escn(o.p.name)+'</b></td><td>'+escn(o.p.lider||'Outros')+'</td>'
+        +'<td style="white-space:nowrap;font-weight:700">'+starsCell+'</td>'
+        +'<td class="num">'+lp.score+(lp.overridden?'<br><span style="font-size:10px;color:var(--muted)">modelo</span>':'')+'</td>'
+        +'<td style="font-size:12px;color:var(--muted)">'+escn(fortes)+risco+noteLine+'</td>'
+        +'<td style="text-align:center">'+editBtn+'</td></tr>';
+      return mainRow + (ovrEdit===o.p.id ? ovrEditorRow(o.p, lp, COLS) : '');
     }).join('');
     return '<div class="card"><h2>5 · Potencial de liderança — ranking do time <span class="tag" style="background:var(--gold)">avaliador/líder</span></h2>'
-      +'<p class="lead" style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Ranking de <b>potencial para liderar e desenvolver pessoas</b> (1–5 ★), com <b>critério exigente e base em evidência</b> (Big Five — Judge et al. 2002; Zenger Folkman). Pesam mais <b>Extroversão/presença</b> e <b>Conscienciosidade</b> (maiores preditores), depois <b>Abertura/criatividade</b> e <b>Estabilidade emocional</b>; <b>desenvolver pessoas</b> (empatia/altruísmo) é necessário mas <b>não basta sozinho</b> (amabilidade isolada ≈ passividade). Valoriza <b>decisão e risco</b>, exige <b>equilíbrio</b> entre competências e desconta riscos e baixa dedicação (Hedonismo). <b>É um sinal de dados</b> — combine com a observação do gestor. Visível apenas para avaliador e líder.</p>'
+      +'<p class="lead" style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Ranking de <b>potencial para liderar e desenvolver pessoas</b> (1–5 ★), com <b>critério exigente e base em evidência</b> (Big Five — Judge et al. 2002; Zenger Folkman). Pesam mais <b>Extroversão/presença</b> e <b>Conscienciosidade</b> (maiores preditores), depois <b>Abertura/criatividade</b> e <b>Estabilidade emocional</b>; <b>desenvolver pessoas</b> (empatia/altruísmo) é necessário mas <b>não basta sozinho</b> (amabilidade isolada ≈ passividade). Valoriza <b>decisão e risco</b>, exige <b>equilíbrio</b> entre competências e desconta riscos e baixa dedicação (Hedonismo). <b>É um sinal de dados</b> — combine com a observação do gestor usando o botão <b>ajustar</b>. Visível apenas para avaliador e líder.</p>'
       +kpis
-      +'<table class="tbl" style="margin-top:12px"><thead><tr><th style="text-align:center">#</th><th>Respondente</th><th>Líder</th><th>Potencial</th><th style="text-align:center">Nota</th><th>Já joga a favor / atenção</th></tr></thead><tbody>'+rows+'</tbody></table>'
-      +'<p class="foot" style="margin-top:10px">★ = potencial, não desempenho atual. Alguém com nota mais baixa pode crescer com desenvolvimento dirigido nos itens "a desenvolver"; use junto da leitura qualitativa de cada perfil.</p></div>';
+      +'<table class="tbl" style="margin-top:12px"><thead><tr><th style="text-align:center">#</th><th>Respondente</th><th>Líder</th><th>Potencial</th><th style="text-align:center">Nota</th><th>Já joga a favor / atenção</th><th style="text-align:center">Ajuste</th></tr></thead><tbody>'+rows+'</tbody></table>'
+      +'<p class="foot" style="margin-top:10px">★ = potencial, não desempenho atual. O botão <b>ajustar</b> deixa o avaliador <b>rebaixar ou travar</b> a estrela de alguém com base no comportamento observado (o modelo não enxerga procrastinação, engajamento ou dedicação). A nota do modelo fica registrada ao lado e o ajuste vale também no relatório gerencial.'+(nAdj?' <b>'+nAdj+' ajuste(s) manual(is) ativo(s).</b>':'')+'</p></div>';
   }
 
   // ---------- Bloco 4: plano personalizado por pessoa (visão do gestor) ----------

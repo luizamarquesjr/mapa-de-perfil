@@ -146,13 +146,15 @@
 <div id="offscreen"></div>
 
 <script src="assets/config.js"></script>
-<script src="assets/core.js?v=3"></script>
-<script src="assets/report.js?v=3"></script>
-<script src="assets/api.js"></script>
+<script src="assets/core.js?v=4"></script>
+<script src="assets/report.js?v=4"></script>
+<script src="assets/api.js?v=4"></script>
 <script src="assets/html2pdf.bundle.min.js"></script>
 <script>
 (function(){
-  var H=window.HOGAN, people=[], KEYSS='mp_adminKey';
+  var H=window.HOGAN, people=[], OVR={}, KEYSS='mp_adminKey';
+  // Anexa o ajuste manual de liderança ao registro (só para o relatório gerencial).
+  function withOvr(p){ if(!p) return p; var o=OVR[p.id]; if(!o) return p; var c={}; for(var k in p) c[k]=p[k]; c.override={stars:o.stars,note:o.note,by:o.by}; return c; }
   var adminKey=sessionStorage.getItem(KEYSS)||'';
 
   if(!(window.API && API.configured())) document.getElementById('cfgwarn').style.display='block';
@@ -184,7 +186,7 @@
         if(res&&/chave/i.test(res.error||'')){toast('Chave inválida.');sessionStorage.removeItem(KEYSS);setTimeout(function(){location.reload();},900);return;}
         document.getElementById('tablewrap').innerHTML='<div class="empty">Erro: '+((res&&res.error)||'sem resposta do backend')+'</div>';return;
       }
-      people=res.people||[]; render();
+      people=res.people||[]; OVR=res.overrides||{}; render();
     }).catch(function(e){document.getElementById('tablewrap').innerHTML='<div class="empty">Falha de conexão com o backend.</div>';});
   }
 
@@ -255,7 +257,7 @@
     var w=document.getElementById('rosterwrap');
     w.querySelectorAll('button[data-rdel]').forEach(function(b){b.onclick=function(){if(confirm('Remover '+roster[+b.dataset.rdel].name+' da lista?')){roster.splice(+b.dataset.rdel,1);saveRoster();renderRoster();}};});
     w.querySelectorAll('button[data-rrep]').forEach(function(b){b.onclick=function(){var m=matchResp(roster[+b.dataset.rrep]);if(m)window.open('resultado.html#'+H.enc(m),'_blank');};});
-    w.querySelectorAll('button[data-rger]').forEach(function(b){b.onclick=function(){var m=matchResp(roster[+b.dataset.rger]);if(m)window.open('relatorio-gerencial.html#'+H.enc(m),'_blank');};});
+    w.querySelectorAll('button[data-rger]').forEach(function(b){b.onclick=function(){var m=matchResp(roster[+b.dataset.rger]);if(m)window.open('relatorio-gerencial.html#'+H.enc(withOvr(m)),'_blank');};});
   }
   document.getElementById('rfilter').onchange=renderRoster;
   document.getElementById('rsearch').oninput=renderRoster;
@@ -331,7 +333,7 @@
         +'<h3>Respostas — '+esc(p.name)+'</h3><div class="muted" style="margin-bottom:6px;">'+esc(p.email)+'</div>'+body);
     },
     rep:function(p){ window.open('resultado.html#'+H.enc(p),'_blank'); },
-    mgr:function(p){ window.open('relatorio-gerencial.html#'+H.enc(p),'_blank'); },
+    mgr:function(p){ window.open('relatorio-gerencial.html#'+H.enc(withOvr(p)),'_blank'); },
     del:function(p){
       if(!confirm('Excluir '+p.name+'? Isso remove a linha da planilha.'))return;
       API.remove(p.id,adminKey).then(function(r){if(r&&r.ok){toast('Excluído.');load();}else toast('Falha ao excluir.');});

@@ -258,8 +258,16 @@
 
     // Potencial de liderança (visão do líder)
     var lp=H.leadership(sc);
-    var lpCard='<div class="card"><h2>Potencial de liderança <span style="color:#b8860b;font-size:17px;letter-spacing:2px;">'+H.stars5(lp.stars)+'</span> <span style="font-size:12px;color:var(--muted);font-weight:400;">'+esc(lp.label)+' · '+lp.score+'/100</span></h2>'
-      +'<p class="lead" style="font-size:12.5px;">Potencial para <b>liderar e desenvolver pessoas</b>, com base em evidência (modelo Big Five — Judge et al. 2002; competências de Zenger Folkman). Pesam mais <b>Extroversão/presença</b> e <b>Conscienciosidade</b> (os maiores preditores), seguidas de <b>Abertura/criatividade</b> e <b>Estabilidade emocional</b>; <b>desenvolver pessoas</b> (empatia/altruísmo) é necessário, mas não basta sozinho. Valoriza <b>decisão e apetite a risco</b>, exige <b>equilíbrio</b> entre as competências e desconta riscos e baixa dedicação. Critério exigente.</p>'
+    if(record.override) lp=H.applyOverride(lp, record.override);
+    var ovrBadge = lp.overridden
+      ? ' <span style="font-size:10px;font-weight:800;color:#fff;background:#5c4a2a;padding:2px 8px;border-radius:5px;letter-spacing:.5px;">AJUSTE DO GESTOR</span>'
+      : '';
+    var ovrLine = lp.overridden
+      ? '<div class="insight" style="border-left-color:#5c4a2a;margin-top:10px;"><b>Ajuste do gestor:</b> nota definida em '+H.stars5(lp.stars)+' (modelo sugeria '+H.stars5(lp.autoStars)+'). '+(lp.note?esc(lp.note):'Sem justificativa registrada.')+(lp.by?' <i>— '+esc(lp.by)+'</i>':'')+'</div>'
+      : '';
+    var lpCard='<div class="card"><h2>Potencial de liderança <span style="color:#b8860b;font-size:17px;letter-spacing:2px;">'+H.stars5(lp.stars)+'</span>'+ovrBadge+' <span style="font-size:12px;color:var(--muted);font-weight:400;">'+esc(lp.label)+(lp.overridden?'':' · '+lp.score+'/100')+'</span></h2>'
+      +'<p class="lead" style="font-size:12.5px;">Potencial para <b>liderar e desenvolver pessoas</b>, com base em evidência (modelo Big Five — Judge et al. 2002; competências de Zenger Folkman). Pesam mais <b>Extroversão/presença</b> e <b>Conscienciosidade</b> (os maiores preditores), seguidas de <b>Abertura/criatividade</b> e <b>Estabilidade emocional</b>; <b>desenvolver pessoas</b> (empatia/altruísmo) é necessário, mas não basta sozinho. Valoriza <b>decisão e apetite a risco</b>, exige <b>equilíbrio</b> entre as competências e desconta riscos e baixa dedicação. Critério exigente'+(lp.overridden?', calibrado pela observação do gestor':'')+'.</p>'
+      +ovrLine
       +'<div class="two" style="margin-top:8px;">'
         +'<div class="kard pos"><h3>Já joga a favor</h3><p style="font-size:12.5px;">'+(lp.drivers.length?esc(lp.drivers.join(', ')):'—')+'</p></div>'
         +'<div class="kard"><h3>A desenvolver (treinável)</h3><p style="font-size:12.5px;">'+(lp.develop.length?esc(lp.develop.join(', ')):'nenhum ponto crítico')+'</p></div>'
